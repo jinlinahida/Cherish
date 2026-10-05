@@ -32,6 +32,8 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearToggleCard
 import io.github.jinlinahida.shirokowear.ui.UnstableShirokoWearApi
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
+import androidx.activity.compose.BackHandler
+
 enum class SettingsSubScreen {
     MAIN,
     CONTENT_SCALE,
@@ -61,6 +63,11 @@ fun SettingsScreen(
     var activeSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
     var draftScale by remember(settings.contentScale) { mutableStateOf(settings.contentScale) }
     val haptics = rememberShirokoWearHaptics()
+
+    BackHandler(enabled = activeSubScreen != SettingsSubScreen.MAIN) {
+        haptics.back()
+        activeSubScreen = SettingsSubScreen.MAIN
+    }
 
     ShirokoWearAmbient(spotlightKey = "cherish_settings") {
         AnimatedContent(

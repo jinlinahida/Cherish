@@ -51,6 +51,8 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearToggleCard
 import io.github.jinlinahida.shirokowear.ui.UnstableShirokoWearApi
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
+import androidx.activity.compose.BackHandler
+
 enum class EditorSubScreen {
     MAIN,
     TITLE_EMOJI,
@@ -76,6 +78,11 @@ fun EventEditorScreen(
     var state by remember { mutableStateOf(initialState) }
     var activeSubScreen by remember { mutableStateOf(EditorSubScreen.MAIN) }
     val haptics = rememberShirokoWearHaptics()
+
+    BackHandler(enabled = activeSubScreen != EditorSubScreen.MAIN) {
+        haptics.back()
+        activeSubScreen = EditorSubScreen.MAIN
+    }
 
     ShirokoWearAmbient(spotlightKey = "cherish_editor") {
         AnimatedContent(

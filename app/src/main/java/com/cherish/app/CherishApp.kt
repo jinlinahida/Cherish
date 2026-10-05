@@ -33,6 +33,9 @@ import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 import com.cherish.app.settings.repository.SettingsRepository
 import com.cherish.app.settings.ui.SettingsScreen
 
+import androidx.activity.compose.BackHandler
+import com.cherish.app.navigation.resolveBackRoute
+
 /**
  * Top-level application composable with ShirokoWear navigation and transitions.
  */
@@ -55,6 +58,14 @@ fun CherishApp(
     fun navigateTo(target: CherishRoute) {
         fromRoute = currentRoute
         currentRoute = target
+    }
+
+    BackHandler(enabled = currentRoute !is CherishRoute.Home) {
+        val target = resolveBackRoute(currentRoute)
+        if (target != null) {
+            haptics.back()
+            navigateTo(target)
+        }
     }
 
     AnimatedContent(
@@ -148,8 +159,9 @@ fun CherishApp(
                         }
                     },
                     onCancel = {
+                        val target = resolveBackRoute(route) ?: CherishRoute.Home
                         haptics.back()
-                        navigateTo(CherishRoute.Home)
+                        navigateTo(target)
                     },
                 )
             }

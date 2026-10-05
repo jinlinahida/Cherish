@@ -51,4 +51,30 @@ class CherishRouteTest {
         assertEquals(2, CherishRoute.About.depth)
         assertEquals("settings", CherishRoute.About.backKey)
     }
+
+    @Test
+    fun `resolveBackRoute returns null for Home meaning system back exits application`() {
+        assertNull(resolveBackRoute(CherishRoute.Home))
+    }
+
+    @Test
+    fun `resolveBackRoute pops Detail and Settings back to Home`() {
+        assertEquals(CherishRoute.Home, resolveBackRoute(CherishRoute.Detail("ev-1")))
+        assertEquals(CherishRoute.Home, resolveBackRoute(CherishRoute.Settings))
+    }
+
+    @Test
+    fun `resolveBackRoute pops Editor creation to Home and Editor edit to Detail`() {
+        // Creation mode (null eventId) -> Home
+        assertEquals(CherishRoute.Home, resolveBackRoute(CherishRoute.Editor(null)))
+
+        // Edit mode (specific eventId) -> Detail(eventId)
+        assertEquals(CherishRoute.Detail("ev-99"), resolveBackRoute(CherishRoute.Editor("ev-99")))
+    }
+
+    @Test
+    fun `resolveBackRoute pops EventOrder and About back to Settings`() {
+        assertEquals(CherishRoute.Settings, resolveBackRoute(CherishRoute.EventOrder))
+        assertEquals(CherishRoute.Settings, resolveBackRoute(CherishRoute.About))
+    }
 }

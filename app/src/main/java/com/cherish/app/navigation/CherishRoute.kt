@@ -68,3 +68,16 @@ sealed class CherishRoute : ShirokoWearRoute {
         override val backKey: String = "settings"
     }
 }
+
+/**
+ * Resolves the target back route for system back gestures and navigation popping.
+ * Returns null if the current route is the top-level [CherishRoute.Home] (meaning exit app).
+ */
+fun resolveBackRoute(currentRoute: CherishRoute): CherishRoute? = when (currentRoute) {
+    is CherishRoute.Home -> null
+    is CherishRoute.Detail -> CherishRoute.Home
+    is CherishRoute.Editor -> if (currentRoute.eventId != null) CherishRoute.Detail(currentRoute.eventId) else CherishRoute.Home
+    is CherishRoute.Settings -> CherishRoute.Home
+    is CherishRoute.EventOrder -> CherishRoute.Settings
+    is CherishRoute.About -> CherishRoute.Settings
+}
