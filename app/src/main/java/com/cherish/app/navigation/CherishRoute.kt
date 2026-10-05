@@ -40,4 +40,13 @@ sealed class CherishRoute : ShirokoWearRoute {
         override val depth: Int = if (eventId != null) 2 else 1
         override val backKey: String = if (eventId != null) "detail_$eventId" else "home"
     }
+
+    /**
+     * Settings screen managing display preferences, haptics, and about.
+     */
+    data object Settings : CherishRoute() {
+        override val routeKey: String = "settings"
+        override val depth: Int = 1
+        override val backKey: String = "home"
+    }
 }

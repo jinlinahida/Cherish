@@ -3,9 +3,14 @@ package com.cherish.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.cherish.app.event.repository.DefaultEventRepository
 import com.cherish.app.home.HomeScreen
 import com.cherish.app.home.HomeViewModel
+import com.cherish.app.settings.repository.DefaultSettingsRepository
+import com.cherish.app.settings.storage.AtomicFileSettingsStorage
+import com.cherish.app.settings.ui.toShirokoWear
 import com.cherish.app.storage.AtomicFileEventStorage
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import java.io.File
@@ -31,9 +36,14 @@ class MainActivity : ComponentActivity() {
         )
 
         setContent {
-            ShirokoWearTheme {
+            val settings by settingsRepository.settings.collectAsState()
+            ShirokoWearTheme(
+                contentScale = settings.contentScale.toShirokoWear(),
+                hapticFeedbackEnabled = settings.hapticsEnabled,
+            ) {
                 CherishApp(
                     repository = repository,
+                    settingsRepository = settingsRepository,
                     homeViewModel = viewModel,
                 )
             }

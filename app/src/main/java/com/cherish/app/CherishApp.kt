@@ -30,12 +30,16 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
+import com.cherish.app.settings.repository.SettingsRepository
+import com.cherish.app.settings.ui.SettingsScreen
+
 /**
  * Top-level application composable with ShirokoWear navigation and transitions.
  */
 @Composable
 fun CherishApp(
     repository: EventRepository,
+    settingsRepository: SettingsRepository,
     homeViewModel: HomeViewModel,
     modifier: Modifier = Modifier,
 ) {
@@ -46,6 +50,7 @@ fun CherishApp(
     val homeUiState by homeViewModel.uiState.collectAsState()
     val today = homeUiState.today
     val events by repository.events.collectAsState()
+    val settings by settingsRepository.settings.collectAsState()
 
     fun navigateTo(target: CherishRoute) {
         fromRoute = currentRoute
@@ -75,6 +80,10 @@ fun CherishApp(
                     onAddEventClick = {
                         haptics.click()
                         navigateTo(CherishRoute.Editor(null))
+                    },
+                    onSettingsClick = {
+                        haptics.click()
+                        navigateTo(CherishRoute.Settings)
                     },
                 )
             }
@@ -140,6 +149,25 @@ fun CherishApp(
                     },
                     onCancel = {
                         haptics.back()
+                        navigateTo(CherishRoute.Home)
+                    },
+                )
+            }
+
+            is CherishRoute.Settings -> {
+                SettingsScreen(
+                    settings = settings,
+                    eventCount = events.size,
+                    onUpdateSettings = { newSettings ->
+                        settingsRepository.update { newSettings }
+                    },
+                    onNavigateToEventOrder = {
+                        // Will wire in Step 5
+                    },
+                    onNavigateToAbout = {
+                        // Will wire in Step 6
+                    },
+                    onBack = {
                         navigateTo(CherishRoute.Home)
                     },
                 )

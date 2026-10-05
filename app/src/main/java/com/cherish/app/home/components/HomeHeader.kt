@@ -34,6 +34,7 @@ fun HomeHeader(
     onToggleViewMode: () -> Unit,
     modifier: Modifier = Modifier,
     onAddEventClick: (() -> Unit)? = null,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val haptics = rememberShirokoWearHaptics()
 
@@ -88,6 +89,26 @@ fun HomeHeader(
                     val modeLabel = if (viewMode == HomeViewMode.LIST) "⊞ 网格" else "☰ 列表"
                     Text(
                         text = modeLabel,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ShirokoWearTheme.colors.accentGold,
+                    )
+                }
+            }
+
+            if (onSettingsClick != null) {
+                ShirokoWearCard(
+                    shape = ShirokoWearShapes.cardCompact,
+                    innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    outerPadding = PaddingValues(0.dp),
+                    fillMaxWidth = false,
+                    onClick = {
+                        haptics.click()
+                        onSettingsClick()
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "⚙ 设置",
                         style = MaterialTheme.typography.labelSmall,
                         color = ShirokoWearTheme.colors.accentGold,
                     )

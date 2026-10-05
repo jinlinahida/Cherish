@@ -39,6 +39,7 @@ fun HomeScreen(
     onEventClick: ((String) -> Unit)? = null,
     onEventLongClick: ((String) -> Unit)? = null,
     onAddEventClick: (() -> Unit)? = null,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -48,6 +49,7 @@ fun HomeScreen(
         onEventClick = onEventClick,
         onEventLongClick = onEventLongClick,
         onAddEventClick = onAddEventClick,
+        onSettingsClick = onSettingsClick,
         modifier = modifier,
     )
 }
@@ -60,6 +62,7 @@ fun HomeScreenContent(
     onEventClick: ((String) -> Unit)? = null,
     onEventLongClick: ((String) -> Unit)? = null,
     onAddEventClick: (() -> Unit)? = null,
+    onSettingsClick: (() -> Unit)? = null,
 ) {
     ShirokoWearAmbient(spotlightKey = "cherish_home") {
         ShirokoWearScalingRotaryColumn(
@@ -74,6 +77,7 @@ fun HomeScreenContent(
                     hasEvents = !uiState.isEmpty,
                     onToggleViewMode = onToggleViewMode,
                     onAddEventClick = onAddEventClick,
+                    onSettingsClick = onSettingsClick,
                 )
             }
 
