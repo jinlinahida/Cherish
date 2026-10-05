@@ -5,6 +5,7 @@ compose = "1.9.0"
 wearCompose = "1.6.2"
 activityCompose = "1.10.0"
 shirokowear = "0.1.0-SNAPSHOT"
+lunar = "1.7.7"
 junit = "4.13.2"
 androidxTestJunit = "1.2.1"
 
@@ -16,6 +17,7 @@ wear-compose-material3 = { module = "androidx.wear.compose:compose-material3", v
 wear-compose-foundation = { module = "androidx.wear.compose:compose-foundation", version.ref = "wearCompose" }
 shirokowear-ui = { module = "io.github.jinlinahida:shirokowear-ui", version.ref = "shirokowear" }
 shirokowear-navigation = { module = "io.github.jinlinahida:shirokowear-navigation", version.ref = "shirokowear" }
+lunar = { module = "cn.6tail:lunar", version.ref = "lunar" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestJunit" }

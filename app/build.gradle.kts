@@ -41,6 +41,9 @@ dependencies {
     implementation(libs.shirokowear.ui)
     implementation(libs.shirokowear.navigation)
 
+    // Pure JVM Chinese Lunar & Solar Calendar
+    implementation(libs.lunar)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)
 }
