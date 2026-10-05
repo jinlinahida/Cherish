@@ -1,0 +1,157 @@
+package com.cherish.app.home
+
+import com.cherish.app.date.model.SolarDate
+import com.cherish.app.event.model.CountdownEvent
+import com.cherish.app.event.model.EventDate
+import com.cherish.app.event.repository.EventRepository
+import com.cherish.app.home.model.CountdownDisplayStatus
+import com.cherish.app.home.model.HomeViewMode
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+class HomeViewModelTest {
+
+    private class FakeEventRepository : EventRepository {
+        val list = mutableListOf<CountdownEvent>()
+        private val _events = MutableStateFlow<List<CountdownEvent>>(emptyList())
+        override val events: StateFlow<List<CountdownEvent>> = _events.asStateFlow()
+
+        override fun getAll(): List<CountdownEvent> = list.toList()
+        override fun getById(id: String): CountdownEvent? = list.firstOrNull { it.id == id }
+
+        override fun add(event: CountdownEvent) {
+            list.add(event)
+            _events.value = list.toList()
+        }
+
+        override fun update(event: CountdownEvent) {
+            val idx = list.indexOfFirst { it.id == event.id }
+            if (idx != -1) {
+                list[idx] = event
+                _events.value = list.toList()
+            }
+        }
+
+        override fun delete(id: String): Boolean {
+            val removed = list.removeAll { it.id == id }
+            if (removed) _events.value = list.toList()
+            return removed
+        }
+
+        override fun reorder(fromIndex: Int, toIndex: Int) {
+            val item = list.removeAt(fromIndex)
+            list.add(toIndex, item)
+            _events.value = list.toList()
+        }
+
+        override fun reload() {
+            _events.value = list.toList()
+        }
+    }
+
+    private lateinit var repository: FakeEventRepository
+    private var simulatedToday = SolarDate(2026, 10, 5)
+    private lateinit var viewModel: HomeViewModel
+    private val testScope = CoroutineScope(Dispatchers.Unconfined)
+
+    @Before
+    fun setUp() {
+        repository = FakeEventRepository()
+        viewModel = HomeViewModel(
+            repository = repository,
+            todayProvider = { simulatedToday },
+            coroutineScope = testScope,
+        )
+    }
+
+    @Test
+    fun `initial state is empty when repository has no events`() {
+        val state = viewModel.uiState.value
+        assertTrue(state.isEmpty)
+        assertEquals(HomeViewMode.LIST, state.viewMode)
+        assertEquals(simulatedToday, state.today)
+    }
+
+    @Test
+    fun `adding events updates uiState reactively`() {
+        val event = CountdownEvent(
+            id = "ev-1",
+            title = "Target Event",
+            eventDate = EventDate.Solar(SolarDate(2026, 10, 15)),
+        )
+        repository.add(event)
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isEmpty)
+        assertEquals(1, state.items.size)
+        assertEquals("Target Event", state.items[0].event.title)
+        assertEquals(10, state.items[0].daysCount)
+        assertEquals(CountdownDisplayStatus.COUNTDOWN, state.items[0].status)
+    }
+
+    @Test
+    fun `pinned events appear first in presentation without altering underlying repository list order`() {
+        val a = CountdownEvent(id = "A", title = "Event A", eventDate = EventDate.Solar(SolarDate(2026, 10, 10)), isPinned = false)
+        val b = CountdownEvent(id = "B", title = "Event B", eventDate = EventDate.Solar(SolarDate(2026, 10, 11)), isPinned = true)
+        val c = CountdownEvent(id = "C", title = "Event C", eventDate = EventDate.Solar(SolarDate(2026, 10, 12)), isPinned = false)
+        val d = CountdownEvent(id = "D", title = "Event D", eventDate = EventDate.Solar(SolarDate(2026, 10, 13)), isPinned = true)
+
+        // Storage order: [A, B, C, D]
+        repository.add(a)
+        repository.add(b)
+        repository.add(c)
+        repository.add(d)
+
+        // Repository storage order must strictly remain [A, B, C, D]
+        assertEquals(listOf("A", "B", "C", "D"), repository.getAll().map { it.id })
+
+        // Home presentation order puts pinned first: [B, D, A, C]
+        val displayedIds = viewModel.uiState.value.items.map { it.event.id }
+        assertEquals(listOf("B", "D", "A", "C"), displayedIds)
+    }
+
+    @Test
+    fun `toggling view mode switches between LIST and GRID`() {
+        assertEquals(HomeViewMode.LIST, viewModel.uiState.value.viewMode)
+
+        viewModel.toggleViewMode()
+        assertEquals(HomeViewMode.GRID, viewModel.uiState.value.viewMode)
+
+        viewModel.toggleViewMode()
+        assertEquals(HomeViewMode.LIST, viewModel.uiState.value.viewMode)
+
+        viewModel.setViewMode(HomeViewMode.GRID)
+        assertEquals(HomeViewMode.GRID, viewModel.uiState.value.viewMode)
+    }
+
+    @Test
+    fun `refreshToday updates calculations when date passes midnight`() {
+        val event = CountdownEvent(
+            id = "midnight-test",
+            title = "Midnight Test",
+            eventDate = EventDate.Solar(SolarDate(2026, 10, 6)),
+        )
+        repository.add(event)
+
+        // On 2026-10-05, target is 1 day away
+        assertEquals(1, viewModel.uiState.value.items[0].daysCount)
+        assertEquals(CountdownDisplayStatus.COUNTDOWN, viewModel.uiState.value.items[0].status)
+
+        // Midnight arrives: new day is 2026-10-06
+        simulatedToday = SolarDate(2026, 10, 6)
+        viewModel.refreshToday()
+
+        // Recalculates to TODAY
+        val updatedState = viewModel.uiState.value
+        assertEquals(0, updatedState.items[0].daysCount)
+        assertEquals(CountdownDisplayStatus.TODAY, updatedState.items[0].status)
+    }
+}
