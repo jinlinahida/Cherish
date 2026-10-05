@@ -24,7 +24,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ShirokoWearTheme {
-                HomeScreen(viewModel = viewModel)
+                CherishApp(
+                    repository = repository,
+                    homeViewModel = viewModel,
+                )
             }
         }
     }

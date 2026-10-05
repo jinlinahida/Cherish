@@ -41,6 +41,7 @@ fun CountdownEventCard(
     modifier: Modifier = Modifier,
     isCompact: Boolean = false,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val highlightColor = when (val bg = uiModel.background) {
         is EventBackground.Color -> Color(bg.argb)
@@ -54,6 +55,8 @@ fun CountdownEventCard(
         shape = cardShape,
         highlighted = uiModel.isPinned,
         highlightColor = highlightColor,
+        onClick = onClick,
+        onLongClick = onLongClick,
         innerPadding = if (isCompact) {
             PaddingValues(horizontal = 6.dp, vertical = 6.dp)
         } else {
@@ -64,7 +67,6 @@ fun CountdownEventCard(
         } else {
             PaddingValues(vertical = 3.dp)
         },
-        onClick = onClick,
     ) {
         if (isCompact) {
             CompactCardContent(uiModel)

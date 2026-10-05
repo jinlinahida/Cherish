@@ -33,6 +33,7 @@ fun HomeHeader(
     hasEvents: Boolean,
     onToggleViewMode: () -> Unit,
     modifier: Modifier = Modifier,
+    onAddEventClick: (() -> Unit)? = null,
 ) {
     val haptics = rememberShirokoWearHaptics()
 
@@ -47,12 +48,32 @@ fun HomeHeader(
             marquee = true,
         )
 
-        if (hasEvents) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onAddEventClick != null) {
+                ShirokoWearCard(
+                    shape = ShirokoWearShapes.cardCompact,
+                    innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    outerPadding = PaddingValues(0.dp),
+                    fillMaxWidth = false,
+                    onClick = {
+                        haptics.click()
+                        onAddEventClick()
+                    },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "+ 添加",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = ShirokoWearTheme.colors.accentGold,
+                    )
+                }
+            }
+
+            if (hasEvents) {
                 ShirokoWearCard(
                     shape = ShirokoWearShapes.cardCompact,
                     innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),

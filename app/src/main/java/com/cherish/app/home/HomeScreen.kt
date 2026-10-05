@@ -36,12 +36,18 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 fun HomeScreen(
     viewModel: HomeViewModel,
     modifier: Modifier = Modifier,
+    onEventClick: ((String) -> Unit)? = null,
+    onEventLongClick: ((String) -> Unit)? = null,
+    onAddEventClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     HomeScreenContent(
         uiState = uiState,
         onToggleViewMode = { viewModel.toggleViewMode() },
+        onEventClick = onEventClick,
+        onEventLongClick = onEventLongClick,
+        onAddEventClick = onAddEventClick,
         modifier = modifier,
     )
 }
@@ -52,6 +58,8 @@ fun HomeScreenContent(
     onToggleViewMode: () -> Unit,
     modifier: Modifier = Modifier,
     onEventClick: ((String) -> Unit)? = null,
+    onEventLongClick: ((String) -> Unit)? = null,
+    onAddEventClick: (() -> Unit)? = null,
 ) {
     ShirokoWearAmbient(spotlightKey = "cherish_home") {
         ShirokoWearScalingRotaryColumn(
@@ -65,6 +73,7 @@ fun HomeScreenContent(
                     viewMode = uiState.viewMode,
                     hasEvents = !uiState.isEmpty,
                     onToggleViewMode = onToggleViewMode,
+                    onAddEventClick = onAddEventClick,
                 )
             }
 
@@ -83,6 +92,7 @@ fun HomeScreenContent(
                         uiModel = item,
                         isCompact = false,
                         onClick = onEventClick?.let { onClick -> { onClick(item.event.id) } },
+                        onLongClick = onEventLongClick?.let { onLongClick -> { onLongClick(item.event.id) } },
                     )
                 }
             } else {
@@ -102,6 +112,7 @@ fun HomeScreenContent(
                                 isCompact = true,
                                 modifier = Modifier.weight(1f),
                                 onClick = onEventClick?.let { onClick -> { onClick(item.event.id) } },
+                                onLongClick = onEventLongClick?.let { onLongClick -> { onLongClick(item.event.id) } },
                             )
                         }
                         if (rowItems.size == 1) {
