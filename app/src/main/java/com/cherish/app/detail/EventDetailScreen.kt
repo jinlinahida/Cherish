@@ -38,14 +38,23 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import com.cherish.app.detail.model.DetailCountdownTypographyTier
+import com.cherish.app.detail.model.resolveDetailCountdownTypographyTier
+import com.cherish.app.home.model.CountdownDisplayStatus
+
 /**
  * Event Detail Screen for Cherish.
  *
  * Displays:
- * - Emoji and title header
- * - Hero countdown card (countdown number, status, target date)
+ * - Emoji and title header with bezel protection
+ * - Hero countdown card with adaptive typography tier and accessibility announcements
  * - Attribute fields (calendar type, repeat rule, category, pin status, notes)
  * - Edit & Delete action buttons with a non-destructive delete confirmation step
+ *   intercepted by a local BackHandler.
  */
 @Composable
 fun EventDetailScreen(
@@ -58,18 +67,46 @@ fun EventDetailScreen(
     val haptics = rememberShirokoWearHaptics()
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    // Intercept hardware/gesture back during delete confirmation
+    BackHandler(enabled = showDeleteConfirm) {
+        haptics.back()
+        showDeleteConfirm = false
+    }
+
+    val typographyTier = remember(uiModel.heroNumberText, uiModel.status) {
+        resolveDetailCountdownTypographyTier(uiModel.heroNumberText, uiModel.status)
+    }
+    val heroTextStyle = when (typographyTier) {
+        DetailCountdownTypographyTier.HERO_LARGE -> MaterialTheme.typography.displayMedium
+        DetailCountdownTypographyTier.HERO_MEDIUM -> MaterialTheme.typography.displaySmall
+        DetailCountdownTypographyTier.HERO_COMPACT -> MaterialTheme.typography.titleLarge
+    }
+
+    val heroCardA11yDescription = remember(
+        uiModel.status,
+        uiModel.heroNumberText,
+        uiModel.heroUnitText,
+        uiModel.targetDateDescription,
+    ) {
+        when (uiModel.status) {
+            CountdownDisplayStatus.TODAY -> "今天，目标日期：${uiModel.targetDateDescription}"
+            CountdownDisplayStatus.COUNTDOWN -> "倒计时 ${uiModel.heroNumberText}${uiModel.heroUnitText}，目标日期：${uiModel.targetDateDescription}"
+            CountdownDisplayStatus.PAST -> "已过去 ${uiModel.heroNumberText} 天，起始日期：${uiModel.targetDateDescription}"
+        }
+    }
+
     ShirokoWearAmbient(spotlightKey = "cherish_detail") {
         ShirokoWearScalingRotaryColumn(
             modifier = modifier.fillMaxSize(),
             itemSpacing = 8.dp,
             contentPadding = ShirokoWearTheme.dimens.screenPadding,
         ) {
-            // Header: Emoji + Title
+            // Header: Emoji + Title (with horizontal padding protecting round bezels)
             item(key = "detail_header") {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 4.dp),
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (uiModel.event.emoji.isNotBlank()) {
@@ -88,17 +125,21 @@ fun EventDetailScreen(
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.semantics { heading() },
                     )
                 }
             }
 
-            // Hero Countdown Card
+            // Hero Countdown Card (with adaptive typography tier and single-line overflow safety)
             item(key = "detail_hero_card") {
                 ShirokoWearCard(
                     shape = ShirokoWearShapes.card,
                     highlighted = uiModel.isPinned,
                     innerPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                     contentAlignment = Alignment.Center,
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = heroCardA11yDescription
+                    },
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -107,17 +148,22 @@ fun EventDetailScreen(
                     ) {
                         Text(
                             text = uiModel.heroNumberText,
-                            fontSize = 38.sp,
+                            style = heroTextStyle,
                             fontWeight = FontWeight.Bold,
                             color = ShirokoWearTheme.colors.accentGold,
                             textAlign = TextAlign.Center,
-                            lineHeight = 42.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = uiModel.heroUnitText,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            softWrap = false,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -125,6 +171,9 @@ fun EventDetailScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }
@@ -205,6 +254,9 @@ fun EventDetailScreen(
                                 border = ShirokoWearButtonDefaults.highlightedBorderStroke(
                                     ShirokoWearTheme.colors.accentCopper,
                                 ),
+                                modifier = Modifier.semantics {
+                                    contentDescription = "确认删除事件：${uiModel.event.title}"
+                                },
                             ) {
                                 Text(
                                     text = "确认删除",
@@ -217,6 +269,9 @@ fun EventDetailScreen(
                                 onClick = {
                                     haptics.back()
                                     showDeleteConfirm = false
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "取消删除"
                                 },
                             ) {
                                 Text(
@@ -233,6 +288,9 @@ fun EventDetailScreen(
                         onClick = {
                             haptics.click()
                             onEditClick(uiModel.event.id)
+                        },
+                        modifier = Modifier.semantics {
+                            contentDescription = "编辑事件：${uiModel.event.title}"
                         },
                     ) {
                         Text(
@@ -253,6 +311,9 @@ fun EventDetailScreen(
                         border = ShirokoWearButtonDefaults.highlightedBorderStroke(
                             ShirokoWearTheme.colors.accentCopper,
                         ),
+                        modifier = Modifier.semantics {
+                            contentDescription = "删除事件：${uiModel.event.title}"
+                        },
                     ) {
                         Text(
                             text = "删除事件",
@@ -267,6 +328,9 @@ fun EventDetailScreen(
                         onClick = {
                             haptics.back()
                             onBackClick()
+                        },
+                        modifier = Modifier.semantics {
+                            contentDescription = "返回上一页"
                         },
                     ) {
                         Text(

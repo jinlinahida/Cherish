@@ -103,7 +103,8 @@ fun CherishApp(
                 val event = events.firstOrNull { it.id == route.eventId }
                 if (event == null) {
                     LaunchedEffect(Unit) {
-                        navigateTo(CherishRoute.Home)
+                        val target = resolveBackRoute(route) ?: CherishRoute.Home
+                        navigateTo(target)
                     }
                 } else {
                     val detailUiModel = remember(event, today) {
@@ -117,10 +118,12 @@ fun CherishApp(
                         },
                         onDeleteConfirm = { id ->
                             repository.delete(id)
-                            navigateTo(CherishRoute.Home)
+                            val target = resolveBackRoute(route) ?: CherishRoute.Home
+                            navigateTo(target)
                         },
                         onBackClick = {
-                            navigateTo(CherishRoute.Home)
+                            val target = resolveBackRoute(route) ?: CherishRoute.Home
+                            navigateTo(target)
                         },
                     )
                 }
@@ -148,11 +151,13 @@ fun CherishApp(
                             try {
                                 if (savedState.isCreateMode) {
                                     repository.add(event)
+                                    haptics.click()
+                                    navigateTo(CherishRoute.Home)
                                 } else {
                                     repository.update(event)
+                                    haptics.click()
+                                    navigateTo(CherishRoute.Detail(event.id))
                                 }
-                                haptics.click()
-                                navigateTo(CherishRoute.Home)
                             } catch (e: Exception) {
                                 // Keep on editor screen if persistent write failed
                             }
