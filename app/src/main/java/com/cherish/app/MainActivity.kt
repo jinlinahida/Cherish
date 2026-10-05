@@ -3,37 +3,36 @@ package com.cherish.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
-import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
+import com.cherish.app.event.repository.DefaultEventRepository
+import com.cherish.app.home.HomeScreen
+import com.cherish.app.home.HomeViewModel
+import com.cherish.app.storage.AtomicFileEventStorage
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
+import java.io.File
 
 class MainActivity : ComponentActivity() {
+
+    private lateinit var viewModel: HomeViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val storageFile = File(filesDir, "events.json")
+        val storage = AtomicFileEventStorage(storageFile)
+        val repository = DefaultEventRepository(storage)
+        viewModel = HomeViewModel(repository = repository)
+
         setContent {
             ShirokoWearTheme {
-                CherishRoot()
+                HomeScreen(viewModel = viewModel)
             }
         }
     }
-}
 
-@Composable
-private fun CherishRoot() {
-    ShirokoWearAmbient(spotlightKey = null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            ShirokoWearScreenTitle(
-                text = "Cherish",
-                marquee = true,
-            )
+    override fun onResume() {
+        super.onResume()
+        if (::viewModel.isInitialized) {
+            viewModel.refreshToday()
         }
     }
 }
