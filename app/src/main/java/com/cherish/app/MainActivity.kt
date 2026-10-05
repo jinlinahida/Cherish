@@ -20,7 +20,15 @@ class MainActivity : ComponentActivity() {
         val storageFile = File(filesDir, "events.json")
         val storage = AtomicFileEventStorage(storageFile)
         val repository = DefaultEventRepository(storage)
-        viewModel = HomeViewModel(repository = repository)
+
+        val settingsFile = File(filesDir, "settings.json")
+        val settingsStorage = com.cherish.app.settings.storage.AtomicFileSettingsStorage(settingsFile)
+        val settingsRepository = com.cherish.app.settings.repository.DefaultSettingsRepository(settingsStorage)
+
+        viewModel = HomeViewModel(
+            repository = repository,
+            settingsRepository = settingsRepository,
+        )
 
         setContent {
             ShirokoWearTheme {

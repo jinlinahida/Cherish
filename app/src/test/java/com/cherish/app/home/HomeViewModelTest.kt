@@ -6,6 +6,8 @@ import com.cherish.app.event.model.EventDate
 import com.cherish.app.event.repository.EventRepository
 import com.cherish.app.home.model.CountdownDisplayStatus
 import com.cherish.app.home.model.HomeViewMode
+import com.cherish.app.settings.model.AppSettings
+import com.cherish.app.settings.repository.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,7 +59,18 @@ class HomeViewModelTest {
         }
     }
 
+    private class FakeSettingsRepository(initial: AppSettings = AppSettings()) : SettingsRepository {
+        private val _settings = MutableStateFlow(initial)
+        override val settings: StateFlow<AppSettings> = _settings
+        override fun getSettings(): AppSettings = _settings.value
+        override fun update(transform: (AppSettings) -> AppSettings) {
+            _settings.value = transform(_settings.value)
+        }
+        override fun reload() {}
+    }
+
     private lateinit var repository: FakeEventRepository
+    private lateinit var settingsRepository: FakeSettingsRepository
     private var simulatedToday = SolarDate(2026, 10, 5)
     private lateinit var viewModel: HomeViewModel
     private val testScope = CoroutineScope(Dispatchers.Unconfined)
@@ -65,8 +78,10 @@ class HomeViewModelTest {
     @Before
     fun setUp() {
         repository = FakeEventRepository()
+        settingsRepository = FakeSettingsRepository()
         viewModel = HomeViewModel(
             repository = repository,
+            settingsRepository = settingsRepository,
             todayProvider = { simulatedToday },
             coroutineScope = testScope,
         )
@@ -130,6 +145,19 @@ class HomeViewModelTest {
 
         viewModel.setViewMode(HomeViewMode.GRID)
         assertEquals(HomeViewMode.GRID, viewModel.uiState.value.viewMode)
+    }
+
+    @Test
+    fun `toggling view mode updates settingsRepository and persists`() {
+        assertEquals(HomeViewMode.LIST, settingsRepository.getSettings().homeViewMode)
+
+        viewModel.toggleViewMode()
+        assertEquals(HomeViewMode.GRID, settingsRepository.getSettings().homeViewMode)
+        assertEquals(HomeViewMode.GRID, viewModel.uiState.value.viewMode)
+
+        viewModel.setViewMode(HomeViewMode.LIST)
+        assertEquals(HomeViewMode.LIST, settingsRepository.getSettings().homeViewMode)
+        assertEquals(HomeViewMode.LIST, viewModel.uiState.value.viewMode)
     }
 
     @Test

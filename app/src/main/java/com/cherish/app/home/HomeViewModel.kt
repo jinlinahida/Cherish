@@ -7,12 +7,14 @@ import com.cherish.app.event.repository.EventRepository
 import com.cherish.app.home.mapper.HomeEventMapper
 import com.cherish.app.home.model.HomeUiState
 import com.cherish.app.home.model.HomeViewMode
+import com.cherish.app.settings.repository.SettingsRepository
 import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 /**
@@ -22,11 +24,12 @@ import kotlinx.coroutines.flow.stateIn
  * 1. Observes [EventRepository.events] reactively.
  * 2. Emits pinned events first, while strictly preserving user-defined order within pinned and unpinned groups.
  *    (Repository's underlying list order is NEVER mutated for presentation).
- * 3. Manages [HomeViewMode] (List vs Grid).
+ * 3. Observes and persists [HomeViewMode] via [SettingsRepository].
  * 4. Manages reference today date and allows onResume / midnight refreshes.
  */
 class HomeViewModel(
     private val repository: EventRepository,
+    private val settingsRepository: SettingsRepository,
     private val todayProvider: () -> SolarDate = { SolarDate.fromLocalDate(LocalDate.now()) },
     private val mapper: HomeEventMapper = HomeEventMapper(),
     coroutineScope: CoroutineScope? = null,
@@ -34,22 +37,25 @@ class HomeViewModel(
 
     private val scope: CoroutineScope = coroutineScope ?: viewModelScope
 
-    private val _viewMode = MutableStateFlow(HomeViewMode.LIST)
-    val viewMode: StateFlow<HomeViewMode> = _viewMode
+    val viewMode: StateFlow<HomeViewMode> = settingsRepository.settings
+        .map { it.homeViewMode }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = settingsRepository.getSettings().homeViewMode,
+        )
 
     private val _currentToday = MutableStateFlow(todayProvider())
     val currentToday: StateFlow<SolarDate> = _currentToday
 
     fun toggleViewMode() {
-        _viewMode.value = if (_viewMode.value == HomeViewMode.LIST) {
-            HomeViewMode.GRID
-        } else {
-            HomeViewMode.LIST
-        }
+        val current = settingsRepository.getSettings().homeViewMode
+        val next = if (current == HomeViewMode.LIST) HomeViewMode.GRID else HomeViewMode.LIST
+        settingsRepository.update { it.copy(homeViewMode = next) }
     }
 
     fun setViewMode(mode: HomeViewMode) {
-        _viewMode.value = mode
+        settingsRepository.update { it.copy(homeViewMode = mode) }
     }
 
     fun refreshToday() {
@@ -61,9 +67,9 @@ class HomeViewModel(
 
     val uiState: StateFlow<HomeUiState> = combine(
         repository.events,
-        _viewMode,
+        settingsRepository.settings,
         _currentToday,
-    ) { events, mode, today ->
+    ) { events, settings, today ->
         val pinned = events.filter { it.isPinned }
         val unpinned = events.filter { !it.isPinned }
         val ordered = pinned + unpinned
@@ -71,7 +77,7 @@ class HomeViewModel(
 
         HomeUiState(
             items = uiModels,
-            viewMode = mode,
+            viewMode = settings.homeViewMode,
             today = today,
         )
     }.stateIn(
@@ -79,13 +85,14 @@ class HomeViewModel(
         started = SharingStarted.Eagerly,
         initialValue = run {
             val initialToday = todayProvider()
+            val initialSettings = settingsRepository.getSettings()
             val allEvents = repository.getAll()
             val pinned = allEvents.filter { it.isPinned }
             val unpinned = allEvents.filter { !it.isPinned }
             val ordered = pinned + unpinned
             HomeUiState(
                 items = ordered.map { mapper.toUiModel(it, initialToday) },
-                viewMode = HomeViewMode.LIST,
+                viewMode = initialSettings.homeViewMode,
                 today = initialToday,
             )
         },
