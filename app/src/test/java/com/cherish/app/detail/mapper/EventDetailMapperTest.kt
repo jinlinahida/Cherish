@@ -116,4 +116,19 @@ class EventDetailMapperTest {
         assertEquals("每 2 周", uiModel.recurrenceDescription)
         assertEquals("工作", uiModel.categoryDescription)
     }
+
+    @Test
+    fun `maps weekly recurrence rule correctly`() {
+        val event = CountdownEvent(
+            id = "weekly-meeting",
+            title = "每周例会",
+            eventDate = EventDate.Solar(SolarDate(2026, 10, 8)),
+            repeatRule = RepeatRule.Custom(interval = 1, unit = RepeatUnit.WEEK),
+            category = EventCategory.WORK,
+        )
+
+        val uiModel = EventDetailMapper.toUiModel(event, referenceToday)
+
+        assertEquals("每周", uiModel.recurrenceDescription)
+    }
 }

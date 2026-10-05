@@ -115,4 +115,22 @@ class RecurrenceCalculatorTest {
         val next = calculator.nextOccurrence(base, null, today, ruleEvery3Days)
         assertEquals(SolarDate(2026, 10, 7), next)
     }
+
+    @Test
+    fun nextOccurrence_customWeekly_advancesByExact7Days() {
+        val base = SolarDate(2026, 10, 1) // Thursday
+        val ruleWeekly = RepeatRule.Custom(1, RepeatUnit.WEEK)
+
+        // Reference is Monday 2026-10-05 -> next occurrence is Thursday 2026-10-08
+        val next1 = calculator.nextOccurrence(base, null, SolarDate(2026, 10, 5), ruleWeekly)
+        assertEquals(SolarDate(2026, 10, 8), next1)
+
+        // Reference is on the occurrence day 2026-10-08 -> next occurrence is today (2026-10-08)
+        val next2 = calculator.nextOccurrence(base, null, SolarDate(2026, 10, 8), ruleWeekly)
+        assertEquals(SolarDate(2026, 10, 8), next2)
+
+        // Reference is day after 2026-10-09 -> next occurrence is Thursday 2026-10-15
+        val next3 = calculator.nextOccurrence(base, null, SolarDate(2026, 10, 9), ruleWeekly)
+        assertEquals(SolarDate(2026, 10, 15), next3)
+    }
 }

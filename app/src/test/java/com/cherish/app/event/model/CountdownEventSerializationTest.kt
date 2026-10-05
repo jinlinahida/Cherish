@@ -146,6 +146,24 @@ class CountdownEventSerializationTest {
     }
 
     @Test
+    fun `case 7b - weekly recurrence rule Custom(1, WEEK) serialization fidelity`() {
+        val event = CountdownEvent(
+            id = "custom-weekly-1",
+            title = "周会",
+            eventDate = EventDate.Solar(SolarDate(2026, 10, 5)),
+            repeatRule = RepeatRule.Custom(interval = 1, unit = RepeatUnit.WEEK),
+        )
+
+        val json = EventJsonSerializer.serializeEvent(event)
+        val deserialized = EventJsonSerializer.deserializeEvent(json)
+
+        assertEquals(event, deserialized)
+        val rule = deserialized.repeatRule as RepeatRule.Custom
+        assertEquals(1, rule.interval)
+        assertEquals(RepeatUnit.WEEK, rule.unit)
+    }
+
+    @Test
     fun `case 8 - pinned state preservation`() {
         val pinned = CountdownEvent(
             id = "pinned-1",

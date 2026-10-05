@@ -33,6 +33,7 @@ fun RepeatPickerSection(
     val options = listOf(
         Pair(RepeatRule.None, "不重复"),
         Pair(RepeatRule.Daily, "每天重复"),
+        Pair(RepeatRule.Custom(1, RepeatUnit.WEEK), "每周重复"),
         Pair(RepeatRule.Monthly, "每月重复"),
         Pair(RepeatRule.Yearly, "每年重复"),
         Pair(RepeatRule.Custom(2, RepeatUnit.WEEK), "每 2 周重复"),

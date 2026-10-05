@@ -316,7 +316,7 @@ private fun formatRepeatRule(rule: RepeatRule): String = when (rule) {
     RepeatRule.Yearly -> "每年重复"
     is RepeatRule.Custom -> when (rule.unit) {
         RepeatUnit.DAY -> "每 ${rule.interval} 天"
-        RepeatUnit.WEEK -> "每 ${rule.interval} 周"
+        RepeatUnit.WEEK -> if (rule.interval == 1) "每周" else "每 ${rule.interval} 周"
         RepeatUnit.MONTH -> "每 ${rule.interval} 个月"
         RepeatUnit.YEAR -> "每 ${rule.interval} 年"
     }
