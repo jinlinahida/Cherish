@@ -162,13 +162,33 @@ fun CherishApp(
                         settingsRepository.update { newSettings }
                     },
                     onNavigateToEventOrder = {
-                        // Will wire in Step 5
+                        haptics.click()
+                        navigateTo(CherishRoute.EventOrder)
                     },
                     onNavigateToAbout = {
                         // Will wire in Step 6
                     },
                     onBack = {
                         navigateTo(CherishRoute.Home)
+                    },
+                )
+            }
+
+            is CherishRoute.EventOrder -> {
+                com.cherish.app.settings.ui.EventOrderScreen(
+                    events = events,
+                    onMoveUp = { index ->
+                        if (index > 0) {
+                            repository.reorder(index, index - 1)
+                        }
+                    },
+                    onMoveDown = { index ->
+                        if (index < events.size - 1) {
+                            repository.reorder(index, index + 1)
+                        }
+                    },
+                    onBack = {
+                        navigateTo(CherishRoute.Settings)
                     },
                 )
             }

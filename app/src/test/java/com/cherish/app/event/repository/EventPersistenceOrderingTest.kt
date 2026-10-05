@@ -208,4 +208,37 @@ class EventPersistenceOrderingTest {
         repository.delete("flow-1")
         assertEquals(emptyList<CountdownEvent>(), repository.events.first())
     }
+
+    @Test
+    fun `reordered list order persists to disk and remains identical after reload even when items are pinned`() {
+        val a = CountdownEvent(id = "A", title = "A", eventDate = EventDate.Solar(SolarDate(2026, 1, 1)))
+        val b = CountdownEvent(id = "B", title = "B", eventDate = EventDate.Solar(SolarDate(2026, 2, 1)))
+        val c = CountdownEvent(id = "C", title = "C", eventDate = EventDate.Solar(SolarDate(2026, 3, 1)))
+        val d = CountdownEvent(id = "D", title = "D", eventDate = EventDate.Solar(SolarDate(2026, 4, 1)))
+
+        repository.add(a)
+        repository.add(b)
+        repository.add(c)
+        repository.add(d)
+
+        // Reorder A, B, C, D -> C, A, D, B
+        repository.reorder(2, 0) // [C, A, B, D]
+        repository.reorder(3, 2) // [C, A, D, B]
+        assertEquals(listOf("C", "A", "D", "B"), repository.getAll().map { it.id })
+
+        // Pin A and B
+        repository.update(a.copy(isPinned = true))
+        repository.update(b.copy(isPinned = true))
+
+        // Reload from disk into a fresh repository instance
+        val freshStorage = AtomicFileEventStorage(JvmAtomicFileWriter(storageFile))
+        val freshRepo = DefaultEventRepository(freshStorage)
+
+        val loaded = freshRepo.getAll()
+        assertEquals(listOf("C", "A", "D", "B"), loaded.map { it.id })
+        assertTrue(loaded.first { it.id == "A" }.isPinned)
+        assertTrue(loaded.first { it.id == "B" }.isPinned)
+        assertFalse(loaded.first { it.id == "C" }.isPinned)
+        assertFalse(loaded.first { it.id == "D" }.isPinned)
+    }
 }

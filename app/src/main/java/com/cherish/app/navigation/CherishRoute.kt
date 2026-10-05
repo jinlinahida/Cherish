@@ -49,4 +49,13 @@ sealed class CherishRoute : ShirokoWearRoute {
         override val depth: Int = 1
         override val backKey: String = "home"
     }
+
+    /**
+     * Event ordering screen to manually adjust repository order.
+     */
+    data object EventOrder : CherishRoute() {
+        override val routeKey: String = "event_order"
+        override val depth: Int = 2
+        override val backKey: String = "settings"
+    }
 }

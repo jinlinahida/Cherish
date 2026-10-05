@@ -182,4 +182,42 @@ class HomeViewModelTest {
         assertEquals(0, updatedState.items[0].daysCount)
         assertEquals(CountdownDisplayStatus.TODAY, updatedState.items[0].status)
     }
+
+    @Test
+    fun `reorder and pin coexistence preserves repository order and correctly resolves presentation order`() {
+        val a = CountdownEvent(id = "A", title = "Event A", eventDate = EventDate.Solar(SolarDate(2026, 10, 10)), isPinned = false)
+        val b = CountdownEvent(id = "B", title = "Event B", eventDate = EventDate.Solar(SolarDate(2026, 10, 11)), isPinned = false)
+        val c = CountdownEvent(id = "C", title = "Event C", eventDate = EventDate.Solar(SolarDate(2026, 10, 12)), isPinned = false)
+        val d = CountdownEvent(id = "D", title = "Event D", eventDate = EventDate.Solar(SolarDate(2026, 10, 13)), isPinned = false)
+
+        repository.add(a)
+        repository.add(b)
+        repository.add(c)
+        repository.add(d)
+
+        // 1. Initial repository order: [A, B, C, D]
+        assertEquals(listOf("A", "B", "C", "D"), repository.getAll().map { it.id })
+
+        // 2. Reorder to [C, A, D, B]:
+        // Move C (index 2) to 0 -> [C, A, B, D]
+        repository.reorder(2, 0)
+        // Move D (index 3) to 2 -> [C, A, D, B]
+        repository.reorder(3, 2)
+        assertEquals(listOf("C", "A", "D", "B"), repository.getAll().map { it.id })
+
+        // 3. Pin A and B:
+        repository.update(a.copy(isPinned = true))
+        repository.update(b.copy(isPinned = true))
+        // Repository order remains strictly [C, A, D, B]
+        assertEquals(listOf("C", "A", "D", "B"), repository.getAll().map { it.id })
+        // Presentation order: pinned [A, B] + unpinned [C, D] -> [A, B, C, D]
+        assertEquals(listOf("A", "B", "C", "D"), viewModel.uiState.value.items.map { it.event.id })
+
+        // 4. Unpin A:
+        repository.update(a.copy(isPinned = false))
+        // Repository order remains strictly [C, A, D, B]
+        assertEquals(listOf("C", "A", "D", "B"), repository.getAll().map { it.id })
+        // Presentation order: pinned [B] + unpinned [C, A, D] -> [B, C, A, D]
+        assertEquals(listOf("B", "C", "A", "D"), viewModel.uiState.value.items.map { it.event.id })
+    }
 }
