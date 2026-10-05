@@ -166,7 +166,8 @@ fun CherishApp(
                         navigateTo(CherishRoute.EventOrder)
                     },
                     onNavigateToAbout = {
-                        // Will wire in Step 6
+                        haptics.click()
+                        navigateTo(CherishRoute.About)
                     },
                     onBack = {
                         navigateTo(CherishRoute.Home)
@@ -187,6 +188,14 @@ fun CherishApp(
                             repository.reorder(index, index + 1)
                         }
                     },
+                    onBack = {
+                        navigateTo(CherishRoute.Settings)
+                    },
+                )
+            }
+
+            is CherishRoute.About -> {
+                com.cherish.app.settings.ui.AboutScreen(
                     onBack = {
                         navigateTo(CherishRoute.Settings)
                     },

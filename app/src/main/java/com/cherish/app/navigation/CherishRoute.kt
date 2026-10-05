@@ -58,4 +58,13 @@ sealed class CherishRoute : ShirokoWearRoute {
         override val depth: Int = 2
         override val backKey: String = "settings"
     }
+
+    /**
+     * About screen displaying application information, versions, and credits.
+     */
+    data object About : CherishRoute() {
+        override val routeKey: String = "about"
+        override val depth: Int = 2
+        override val backKey: String = "settings"
+    }
 }
