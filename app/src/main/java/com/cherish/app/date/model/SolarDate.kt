@@ -1,10 +1,12 @@
 package com.cherish.app.date.model
 
 import java.time.LocalDate
+import kotlinx.serialization.Serializable
 
 /**
  * Pure Kotlin representation of a Gregorian (Solar) date.
  */
+@Serializable
 data class SolarDate(
     val year: Int,
     val month: Int,

@@ -1,5 +1,7 @@
 package com.cherish.app.date.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Pure Kotlin representation of a traditional Chinese Lunar date.
  *
@@ -8,6 +10,7 @@ package com.cherish.app.date.model
  * @property day Lunar day of month (1..30)
  * @property isLeapMonth Whether this month is an intercalary leap month (闰月)
  */
+@Serializable
 data class LunarDate(
     val year: Int,
     val month: Int,

@@ -2,6 +2,7 @@ package com.cherish.app.event.model
 
 import com.cherish.app.date.model.RepeatRule
 import java.util.UUID
+import kotlinx.serialization.Serializable
 
 /**
  * Domain entity representing a countdown / count-up event.
@@ -16,6 +17,7 @@ import java.util.UUID
  * @property background Custom background style configuration
  * @property notes Optional notes or remarks
  */
+@Serializable
 data class CountdownEvent(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
