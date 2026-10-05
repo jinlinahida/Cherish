@@ -107,30 +107,42 @@ fun CherishApp(
             }
 
             is CherishRoute.Editor -> {
-                // Temporary editor placeholder until next step wires full editor screen
-                ShirokoWearAmbient(spotlightKey = "cherish_editor") {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        ShirokoWearScreenTitle(text = if (route.eventId == null) "新建事件" else "编辑事件")
-                        ShirokoWearCard(modifier = Modifier.padding(vertical = 8.dp)) {
-                            Text(
-                                text = "编辑器加载中...",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        ShirokoWearCardButton(onClick = {
-                            haptics.back()
-                            navigateTo(CherishRoute.Home)
-                        }) {
-                            Text("返回")
-                        }
+                val existingEvent = route.eventId?.let { id -> events.firstOrNull { it.id == id } }
+                val calendar = remember { com.cherish.app.date.lunar.DefaultLunarCalendar() }
+                val initialLunar = remember(today) { calendar.solarToLunar(today) }
+
+                val editorState = remember(route.eventId, existingEvent) {
+                    if (existingEvent != null) {
+                        com.cherish.app.editor.model.EventEditorState.fromEvent(existingEvent, today, initialLunar)
+                    } else {
+                        com.cherish.app.editor.model.EventEditorState.createDefault(today, initialLunar)
                     }
                 }
+
+                com.cherish.app.editor.EventEditorScreen(
+                    initialState = editorState,
+                    onSave = { savedState ->
+                        val result = com.cherish.app.editor.sanitizer.DatePickerSanitizer.validateAndBuildEvent(savedState, calendar)
+                        if (result.isSuccess) {
+                            val event = result.getOrThrow()
+                            try {
+                                if (savedState.isCreateMode) {
+                                    repository.add(event)
+                                } else {
+                                    repository.update(event)
+                                }
+                                haptics.click()
+                                navigateTo(CherishRoute.Home)
+                            } catch (e: Exception) {
+                                // Keep on editor screen if persistent write failed
+                            }
+                        }
+                    },
+                    onCancel = {
+                        haptics.back()
+                        navigateTo(CherishRoute.Home)
+                    },
+                )
             }
         }
     }
