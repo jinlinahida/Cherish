@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -21,7 +22,9 @@ import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.cherish.app.event.model.EventBackground
 import com.cherish.app.home.model.CountdownDisplayStatus
+import com.cherish.app.home.model.CountdownTypographyTier
 import com.cherish.app.home.model.HomeEventUiModel
+import com.cherish.app.home.model.resolveCountdownTypographyTier
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
@@ -77,6 +80,14 @@ fun CountdownEventCard(
 }
 
 @Composable
+private fun CountdownTypographyTier.toTextStyle(): TextStyle = when (this) {
+    CountdownTypographyTier.DISPLAY_MEDIUM -> MaterialTheme.typography.displayMedium
+    CountdownTypographyTier.DISPLAY_SMALL -> MaterialTheme.typography.displaySmall
+    CountdownTypographyTier.TITLE_LARGE -> MaterialTheme.typography.titleLarge
+    CountdownTypographyTier.TITLE_MEDIUM -> MaterialTheme.typography.titleMedium
+}
+
+@Composable
 private fun StandardCardContent(uiModel: HomeEventUiModel) {
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -117,14 +128,23 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
 
         Spacer(modifier = Modifier.height(2.dp))
 
+        val isToday = uiModel.status == CountdownDisplayStatus.TODAY
+        val typographyTier = resolveCountdownTypographyTier(
+            isCompact = false,
+            isToday = isToday,
+            daysCount = uiModel.daysCount,
+        )
+
         // Large Number + Unit
-        if (uiModel.status == CountdownDisplayStatus.TODAY) {
+        if (isToday) {
             Text(
                 text = "TODAY",
-                style = MaterialTheme.typography.displaySmall,
+                style = typographyTier.toTextStyle(),
                 fontWeight = FontWeight.Black,
                 color = ShirokoWearTheme.colors.accentGold,
                 textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false,
             )
         } else {
             Row(
@@ -139,9 +159,11 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
 
                 Text(
                     text = "${uiModel.daysCount}",
-                    style = MaterialTheme.typography.displayMedium,
+                    style = typographyTier.toTextStyle(),
                     fontWeight = FontWeight.Black,
                     color = numberColor,
+                    maxLines = 1,
+                    softWrap = false,
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -150,6 +172,8 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
                     fontWeight = FontWeight.Medium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 6.dp),
+                    maxLines = 1,
+                    softWrap = false,
                 )
             }
         }
@@ -161,6 +185,7 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -172,7 +197,7 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
-        // Compact Title
+        // Compact Title Row with optional Pin indicator
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -189,16 +214,33 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
                 color = ShirokoWearTheme.colors.contentPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
             )
+            if (uiModel.isPinned) {
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = "📌",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
         }
 
+        val isToday = uiModel.status == CountdownDisplayStatus.TODAY
+        val typographyTier = resolveCountdownTypographyTier(
+            isCompact = true,
+            isToday = isToday,
+            daysCount = uiModel.daysCount,
+        )
+
         // Compact Number
-        if (uiModel.status == CountdownDisplayStatus.TODAY) {
+        if (isToday) {
             Text(
                 text = "TODAY",
-                style = MaterialTheme.typography.titleMedium,
+                style = typographyTier.toTextStyle(),
                 fontWeight = FontWeight.Bold,
                 color = ShirokoWearTheme.colors.accentGold,
+                maxLines = 1,
+                softWrap = false,
             )
         } else {
             val numberColor = if (uiModel.isPinned) {
@@ -208,15 +250,18 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
             }
             Text(
                 text = "${uiModel.daysCount}",
-                style = MaterialTheme.typography.titleLarge,
+                style = typographyTier.toTextStyle(),
                 fontWeight = FontWeight.Bold,
                 color = numberColor,
+                maxLines = 1,
+                softWrap = false,
             )
             Text(
                 text = uiModel.unitLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                softWrap = false,
             )
         }
     }

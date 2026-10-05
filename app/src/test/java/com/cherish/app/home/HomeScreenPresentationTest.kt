@@ -5,7 +5,10 @@ import com.cherish.app.event.model.CountdownEvent
 import com.cherish.app.event.model.EventDate
 import com.cherish.app.home.mapper.HomeEventMapper
 import com.cherish.app.home.model.CountdownDisplayStatus
+import com.cherish.app.home.model.CountdownTypographyTier
+import com.cherish.app.home.model.resolveCountdownTypographyTier
 import com.cherish.app.home.preview.DemoEvents
+import com.cherish.app.navigation.CherishRoute
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -141,4 +144,139 @@ class HomeScreenPresentationTest {
 
         assertTrue(rows.isEmpty())
     }
+
+    @Test
+    fun `empty state action invokes creation route navigation`() {
+        var navigatedRoute: CherishRoute? = null
+        val onAddPlaceholderClick = {
+            navigatedRoute = CherishRoute.Editor(eventId = null)
+        }
+
+        onAddPlaceholderClick.invoke()
+
+        assertEquals(CherishRoute.Editor(eventId = null), navigatedRoute)
+    }
+
+    @Test
+    fun `countdown typography tier adapts for small numbers in list mode`() {
+        val numbers = listOf(0, 1, 9, 10, 99, 100, 999)
+        for (num in numbers) {
+            val tier = resolveCountdownTypographyTier(
+                isCompact = false,
+                isToday = false,
+                daysCount = num,
+            )
+            assertEquals(
+                "Number $num in list mode should resolve to DISPLAY_MEDIUM",
+                CountdownTypographyTier.DISPLAY_MEDIUM,
+                tier,
+            )
+        }
+    }
+
+    @Test
+    fun `countdown typography tier adapts for large numbers and today in list mode`() {
+        val largeNumbers = listOf(1000, 9999, 10000, 50000)
+        for (num in largeNumbers) {
+            val tier = resolveCountdownTypographyTier(
+                isCompact = false,
+                isToday = false,
+                daysCount = num,
+            )
+            assertEquals(
+                "Large number $num in list mode should resolve to DISPLAY_SMALL",
+                CountdownTypographyTier.DISPLAY_SMALL,
+                tier,
+            )
+        }
+
+        // TODAY status always uses DISPLAY_SMALL
+        val todayTier = resolveCountdownTypographyTier(
+            isCompact = false,
+            isToday = true,
+            daysCount = 0,
+        )
+        assertEquals(CountdownTypographyTier.DISPLAY_SMALL, todayTier)
+    }
+
+    @Test
+    fun `countdown typography tier adapts for small numbers in grid mode`() {
+        val numbers = listOf(0, 1, 9, 10, 99, 100, 999)
+        for (num in numbers) {
+            val tier = resolveCountdownTypographyTier(
+                isCompact = true,
+                isToday = false,
+                daysCount = num,
+            )
+            assertEquals(
+                "Number $num in grid mode should resolve to TITLE_LARGE",
+                CountdownTypographyTier.TITLE_LARGE,
+                tier,
+            )
+        }
+    }
+
+    @Test
+    fun `countdown typography tier adapts for large numbers and today in grid mode`() {
+        val largeNumbers = listOf(1000, 9999, 10000, 50000)
+        for (num in largeNumbers) {
+            val tier = resolveCountdownTypographyTier(
+                isCompact = true,
+                isToday = false,
+                daysCount = num,
+            )
+            assertEquals(
+                "Large number $num in grid mode should resolve to TITLE_MEDIUM",
+                CountdownTypographyTier.TITLE_MEDIUM,
+                tier,
+            )
+        }
+
+        // TODAY status in grid mode always uses TITLE_MEDIUM
+        val todayTier = resolveCountdownTypographyTier(
+            isCompact = true,
+            isToday = true,
+            daysCount = 0,
+        )
+        assertEquals(CountdownTypographyTier.TITLE_MEDIUM, todayTier)
+    }
+
+    @Test
+    fun `countdown typography tier handles negative day counts gracefully`() {
+        val smallPast = resolveCountdownTypographyTier(
+            isCompact = false,
+            isToday = false,
+            daysCount = -30L,
+        )
+        assertEquals(CountdownTypographyTier.DISPLAY_MEDIUM, smallPast)
+
+        val largePast = resolveCountdownTypographyTier(
+            isCompact = false,
+            isToday = false,
+            daysCount = -1200L,
+        )
+        assertEquals(CountdownTypographyTier.DISPLAY_SMALL, largePast)
+    }
+
+    @Test
+    fun `grid presentation models preserve pinned flag for badge rendering`() {
+        val pinnedEvent = CountdownEvent(
+            id = "pin-1",
+            title = "置顶纪念日",
+            eventDate = EventDate.Solar(SolarDate(2026, 12, 1)),
+            isPinned = true,
+        )
+        val unpinnedEvent = CountdownEvent(
+            id = "unpin-1",
+            title = "普通事件",
+            eventDate = EventDate.Solar(SolarDate(2026, 12, 2)),
+            isPinned = false,
+        )
+
+        val models = listOf(pinnedEvent, unpinnedEvent).map { HomeEventMapper.toUiModel(it, referenceDate) }
+
+        assertTrue("Pinned event must have isPinned true in UI model", models[0].isPinned)
+        assertFalse("Unpinned event must have isPinned false in UI model", models[1].isPinned)
+    }
 }
+

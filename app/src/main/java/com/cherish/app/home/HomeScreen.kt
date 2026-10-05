@@ -8,15 +8,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.items
 import com.cherish.app.date.model.SolarDate
+import com.cherish.app.event.model.CountdownEvent
+import com.cherish.app.event.model.EventBackground
+import com.cherish.app.event.model.EventDate
 import com.cherish.app.home.components.CountdownEventCard
 import com.cherish.app.home.components.HomeEmptyState
 import com.cherish.app.home.components.HomeHeader
 import com.cherish.app.home.mapper.HomeEventMapper
+import com.cherish.app.home.model.CountdownDisplayStatus
+import com.cherish.app.home.model.HomeEventUiModel
 import com.cherish.app.home.model.HomeUiState
 import com.cherish.app.home.model.HomeViewMode
 import com.cherish.app.home.preview.DemoEvents
@@ -64,6 +70,8 @@ fun HomeScreenContent(
     onAddEventClick: (() -> Unit)? = null,
     onSettingsClick: (() -> Unit)? = null,
 ) {
+    val gridRows = remember(uiState.items) { uiState.items.chunked(2) }
+
     ShirokoWearAmbient(spotlightKey = "cherish_home") {
         ShirokoWearScalingRotaryColumn(
             modifier = modifier.fillMaxSize(),
@@ -84,7 +92,9 @@ fun HomeScreenContent(
             // Empty State
             if (uiState.isEmpty) {
                 item(key = "home_empty") {
-                    HomeEmptyState()
+                    HomeEmptyState(
+                        onAddPlaceholderClick = onAddEventClick,
+                    )
                 }
             } else if (uiState.viewMode == HomeViewMode.LIST) {
                 // List Mode: single column full-width cards
@@ -101,9 +111,8 @@ fun HomeScreenContent(
                 }
             } else {
                 // Grid Mode: 2-column compact cards
-                val rows = uiState.items.chunked(2)
                 items(
-                    items = rows,
+                    items = gridRows,
                     key = { row -> "grid_row_${row.first().event.id}" },
                 ) { rowItems ->
                     Row(
@@ -166,3 +175,80 @@ private fun HomeScreenGridPreview() {
         )
     }
 }
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun HomeScreenEmptyPreview() {
+    val sampleDate = SolarDate(2026, 10, 5)
+    ShirokoWearTheme {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                items = emptyList(),
+                viewMode = HomeViewMode.LIST,
+                today = sampleDate,
+            ),
+            onToggleViewMode = {},
+            onAddEventClick = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun HomeScreenAdaptedNumbersGridPreview() {
+    val sampleDate = SolarDate(2026, 10, 5)
+    val testEvents = listOf(
+        HomeEventUiModel(
+            event = CountdownEvent(id = "1", title = "置顶千日", emoji = "🪐", eventDate = EventDate.Solar(SolarDate(2030, 1, 1)), isPinned = true),
+            targetSolarDate = SolarDate(2030, 1, 1),
+            daysCount = 1184,
+            status = CountdownDisplayStatus.COUNTDOWN,
+            unitLabel = "DAYS",
+            targetDateFormatted = "2030.01.01",
+            isPinned = true,
+            background = EventBackground.Default,
+        ),
+        HomeEventUiModel(
+            event = CountdownEvent(id = "2", title = "今天重要时刻", emoji = "🌟", eventDate = EventDate.Solar(sampleDate), isPinned = true),
+            targetSolarDate = sampleDate,
+            daysCount = 0,
+            status = CountdownDisplayStatus.TODAY,
+            unitLabel = "TODAY",
+            targetDateFormatted = "2026.10.05",
+            isPinned = true,
+            background = EventBackground.Default,
+        ),
+        HomeEventUiModel(
+            event = CountdownEvent(id = "3", title = "9999日漫长倒数", emoji = "⏳", eventDate = EventDate.Solar(SolarDate(2054, 2, 20)), isPinned = false),
+            targetSolarDate = SolarDate(2054, 2, 20),
+            daysCount = 9999,
+            status = CountdownDisplayStatus.COUNTDOWN,
+            unitLabel = "DAYS",
+            targetDateFormatted = "2054.02.20",
+            isPinned = false,
+            background = EventBackground.Default,
+        ),
+        HomeEventUiModel(
+            event = CountdownEvent(id = "4", title = "普通双位数", emoji = "🎯", eventDate = EventDate.Solar(SolarDate(2026, 11, 4)), isPinned = false),
+            targetSolarDate = SolarDate(2026, 11, 4),
+            daysCount = 30,
+            status = CountdownDisplayStatus.COUNTDOWN,
+            unitLabel = "DAYS",
+            targetDateFormatted = "2026.11.04",
+            isPinned = false,
+            background = EventBackground.Default,
+        ),
+    )
+
+    ShirokoWearTheme {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                items = testEvents,
+                viewMode = HomeViewMode.GRID,
+                today = sampleDate,
+            ),
+            onToggleViewMode = {},
+        )
+    }
+}
+
