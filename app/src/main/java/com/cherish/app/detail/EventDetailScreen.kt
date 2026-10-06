@@ -32,8 +32,10 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearButtonDefaults
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearContentScale
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearDetailField
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
@@ -366,3 +368,82 @@ private fun EventDetailScreenPreview() {
         )
     }
 }
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun EventDetailScreenRoundLargePreview() {
+    val sampleEvent = CountdownEvent(
+        id = "preview-round-large",
+        title = "这是一个超长标题用来验证小屏幕自动省略展示效果",
+        emoji = "🪐",
+        eventDate = EventDate.Solar(SolarDate(2030, 1, 1)),
+        isPinned = true,
+        notes = "超长备注信息在圆屏放大下的排版表现",
+    )
+    val uiModel = EventDetailMapper.toUiModel(sampleEvent, SolarDate(2026, 10, 5))
+
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.ROUND,
+    ) {
+        EventDetailScreen(
+            uiModel = uiModel,
+            onEditClick = {},
+            onDeleteConfirm = {},
+            onBackClick = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun EventDetailScreenSquareStandardPreview() {
+    val sampleEvent = CountdownEvent(
+        id = "preview-square-standard",
+        title = "妈妈生日",
+        emoji = "🎂",
+        eventDate = EventDate.Solar(SolarDate(2026, 10, 15)),
+        isPinned = true,
+        notes = "方表标准排版测试",
+    )
+    val uiModel = EventDetailMapper.toUiModel(sampleEvent, SolarDate(2026, 10, 5))
+
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.STANDARD,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        EventDetailScreen(
+            uiModel = uiModel,
+            onEditClick = {},
+            onDeleteConfirm = {},
+            onBackClick = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun EventDetailScreenSquareLargePreview() {
+    val sampleEvent = CountdownEvent(
+        id = "preview-square-large",
+        title = "今天的重要时刻",
+        emoji = "🌟",
+        eventDate = EventDate.Solar(SolarDate(2026, 10, 5)),
+        isPinned = false,
+        notes = "方表大字体排版测试",
+    )
+    val uiModel = EventDetailMapper.toUiModel(sampleEvent, SolarDate(2026, 10, 5))
+
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        EventDetailScreen(
+            uiModel = uiModel,
+            onEditClick = {},
+            onDeleteConfirm = {},
+            onBackClick = {},
+        )
+    }
+}
+

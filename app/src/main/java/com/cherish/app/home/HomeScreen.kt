@@ -27,7 +27,9 @@ import com.cherish.app.home.model.HomeUiState
 import com.cherish.app.home.model.HomeViewMode
 import com.cherish.app.home.preview.DemoEvents
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearContentScale
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 
 /**
@@ -251,4 +253,71 @@ private fun HomeScreenAdaptedNumbersGridPreview() {
         )
     }
 }
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun HomeScreenRoundLargePreview() {
+    val sampleDate = SolarDate(2026, 10, 5)
+    val demoEvents = DemoEvents.samples(sampleDate)
+    val uiModels = demoEvents.map { HomeEventMapper.toUiModel(it, sampleDate) }
+
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.ROUND,
+    ) {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                items = uiModels,
+                viewMode = HomeViewMode.LIST,
+                today = sampleDate,
+            ),
+            onToggleViewMode = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun HomeScreenSquareStandardPreview() {
+    val sampleDate = SolarDate(2026, 10, 5)
+    val demoEvents = DemoEvents.samples(sampleDate)
+    val uiModels = demoEvents.map { HomeEventMapper.toUiModel(it, sampleDate) }
+
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.STANDARD,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                items = uiModels,
+                viewMode = HomeViewMode.LIST,
+                today = sampleDate,
+            ),
+            onToggleViewMode = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun HomeScreenSquareLargePreview() {
+    val sampleDate = SolarDate(2026, 10, 5)
+    val demoEvents = DemoEvents.samples(sampleDate)
+    val uiModels = demoEvents.map { HomeEventMapper.toUiModel(it, sampleDate) }
+
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        HomeScreenContent(
+            uiState = HomeUiState(
+                items = uiModels,
+                viewMode = HomeViewMode.GRID,
+                today = sampleDate,
+            ),
+            onToggleViewMode = {},
+        )
+    }
+}
+
 

@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
@@ -24,7 +25,9 @@ import com.cherish.app.settings.model.AppContentScale
 import com.cherish.app.settings.model.AppSettings
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearContentScale
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearSettingsItem
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
@@ -224,3 +227,96 @@ fun SettingsScreen(
         }
     }
 }
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun SettingsScreenRoundStandardPreview() {
+    val sampleSettings = AppSettings(
+        homeViewMode = HomeViewMode.LIST,
+        contentScale = AppContentScale.STANDARD,
+        hapticsEnabled = true,
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.STANDARD,
+        screenShape = ShirokoWearScreenShape.ROUND,
+    ) {
+        SettingsScreen(
+            settings = sampleSettings,
+            eventCount = 8,
+            onUpdateSettings = {},
+            onNavigateToEventOrder = {},
+            onNavigateToAbout = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun SettingsScreenRoundLargePreview() {
+    val sampleSettings = AppSettings(
+        homeViewMode = HomeViewMode.LIST,
+        contentScale = AppContentScale.LARGE,
+        hapticsEnabled = true,
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.ROUND,
+    ) {
+        SettingsScreen(
+            settings = sampleSettings,
+            eventCount = 8,
+            onUpdateSettings = {},
+            onNavigateToEventOrder = {},
+            onNavigateToAbout = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun SettingsScreenSquareStandardPreview() {
+    val sampleSettings = AppSettings(
+        homeViewMode = HomeViewMode.GRID,
+        contentScale = AppContentScale.STANDARD,
+        hapticsEnabled = true,
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.STANDARD,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        SettingsScreen(
+            settings = sampleSettings,
+            eventCount = 8,
+            onUpdateSettings = {},
+            onNavigateToEventOrder = {},
+            onNavigateToAbout = {},
+            onBack = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun SettingsScreenSquareLargePreview() {
+    val sampleSettings = AppSettings(
+        homeViewMode = HomeViewMode.GRID,
+        contentScale = AppContentScale.LARGE,
+        hapticsEnabled = true,
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        SettingsScreen(
+            settings = sampleSettings,
+            eventCount = 8,
+            onUpdateSettings = {},
+            onNavigateToEventOrder = {},
+            onNavigateToAbout = {},
+            onBack = {},
+        )
+    }
+}
+

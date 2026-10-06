@@ -42,7 +42,9 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearButtonDefaults
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearContentScale
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
+import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearSettingsItem
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
@@ -361,3 +363,72 @@ private fun EventEditorScreenPreview() {
         )
     }
 }
+
+@Preview(device = "id:wearos_small_round", showSystemUi = true)
+@Composable
+private fun EventEditorScreenRoundLargePreview() {
+    val sampleState = EventEditorState.createDefault(
+        today = SolarDate(2026, 10, 5),
+        initialLunar = LunarDate(2026, 8, 25),
+    ).copy(
+        title = "这是一个超长标题用来验证编辑页小圆屏大字体排版表现",
+        emoji = "🎂",
+        isPinned = true,
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.ROUND,
+    ) {
+        EventEditorScreen(
+            initialState = sampleState,
+            onSave = {},
+            onCancel = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun EventEditorScreenSquareStandardPreview() {
+    val sampleState = EventEditorState.createDefault(
+        today = SolarDate(2026, 10, 5),
+        initialLunar = LunarDate(2026, 8, 25),
+    ).copy(
+        title = "方屏标准排版",
+        emoji = "✨",
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.STANDARD,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        EventEditorScreen(
+            initialState = sampleState,
+            onSave = {},
+            onCancel = {},
+        )
+    }
+}
+
+@Preview(device = "id:wearos_rect", showSystemUi = true)
+@Composable
+private fun EventEditorScreenSquareLargePreview() {
+    val sampleState = EventEditorState.createDefault(
+        today = SolarDate(2026, 10, 5),
+        initialLunar = LunarDate(2026, 8, 25),
+    ).copy(
+        title = "方屏大字阶排版测试",
+        emoji = "🎯",
+        isPinned = true,
+    )
+    ShirokoWearTheme(
+        contentScale = ShirokoWearContentScale.LARGE,
+        screenShape = ShirokoWearScreenShape.SQUARE,
+    ) {
+        EventEditorScreen(
+            initialState = sampleState,
+            onSave = {},
+            onCancel = {},
+        )
+    }
+}
+

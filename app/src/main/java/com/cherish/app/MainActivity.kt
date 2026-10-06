@@ -12,6 +12,7 @@ import com.cherish.app.settings.repository.DefaultSettingsRepository
 import com.cherish.app.settings.storage.AtomicFileSettingsStorage
 import com.cherish.app.settings.ui.toShirokoWear
 import com.cherish.app.storage.AtomicFileEventStorage
+import com.cherish.app.ui.rememberScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import java.io.File
 
@@ -37,8 +38,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settings by settingsRepository.settings.collectAsState()
+            val screenShape = rememberScreenShape()
             ShirokoWearTheme(
                 contentScale = settings.contentScale.toShirokoWear(),
+                screenShape = screenShape,
                 hapticFeedbackEnabled = settings.hapticsEnabled,
             ) {
                 CherishApp(
