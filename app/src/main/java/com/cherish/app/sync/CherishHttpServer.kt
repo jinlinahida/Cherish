@@ -28,6 +28,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.io.File
 import java.io.BufferedReader
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
@@ -57,7 +58,7 @@ class CherishHttpServer(
     private val recurrenceCalculator = RecurrenceCalculator(calendar)
     private var serverSocket: ServerSocket? = null
     private val isRunning = AtomicBoolean(false)
-    private val executor = Executors.newCachedThreadPool()
+    private var executor = Executors.newCachedThreadPool()
     private val json = Json { ignoreUnknownKeys = true }
 
     /**
@@ -66,6 +67,9 @@ class CherishHttpServer(
      */
     fun start(): Int {
         if (isRunning.get()) return serverSocket?.localPort ?: session.port
+        if (executor.isShutdown) {
+            executor = Executors.newCachedThreadPool()
+        }
 
         val socket = try {
             ServerSocket(session.port)
@@ -200,6 +204,11 @@ class CherishHttpServer(
 
                 method == "POST" && path == "/api/upload-image" -> {
                     handleUploadImage(output, bodyBytes)
+                }
+
+                method == "GET" && path.startsWith("/api/images/") -> {
+                    val imgPath = path.removePrefix("/api/images/")
+                    handleGetImage(output, imgPath)
                 }
 
                 else -> {
@@ -406,23 +415,43 @@ class CherishHttpServer(
     }
 
     private fun handleUploadImage(output: OutputStream, bodyBytes: ByteArray) {
-        val bodyStr = String(bodyBytes, StandardCharsets.UTF_8)
-        val jsonEl = json.parseToJsonElement(bodyStr).jsonObject
-        val base64Raw = jsonEl["base64"]?.jsonPrimitive?.contentOrNull ?: ""
-        val eventId = jsonEl["eventId"]?.jsonPrimitive?.contentOrNull ?: "phone_draft"
-        val dimAlpha = jsonEl["dimAlpha"]?.jsonPrimitive?.doubleOrNull?.toFloat() ?: 0.45f
+        try {
+            val bodyStr = String(bodyBytes, StandardCharsets.UTF_8)
+            val jsonEl = json.parseToJsonElement(bodyStr).jsonObject
+            val base64Raw = jsonEl["base64"]?.jsonPrimitive?.contentOrNull ?: ""
+            val eventId = jsonEl["eventId"]?.jsonPrimitive?.contentOrNull ?: "phone_draft"
+            val dimAlpha = jsonEl["dimAlpha"]?.jsonPrimitive?.doubleOrNull?.toFloat() ?: 0.45f
 
-        val cleanBase64 = base64Raw.substringAfter("base64,").trim()
-        val imageBytes = Base64.getDecoder().decode(cleanBase64)
+            val cleanBase64 = base64Raw.substringAfter("base64,").trim()
+            if (cleanBase64.isEmpty()) {
+                sendResponse(output, 400, "Bad Request", "application/json", """{"success":false,"error":"Empty image data"}""".toByteArray())
+                return
+            }
 
-        val filename = imageStorage?.saveImage(
-            eventId = eventId,
-            bytes = imageBytes,
-            extension = "jpg",
-        ) ?: "uploaded_${System.currentTimeMillis()}.jpg"
+            val imageBytes = Base64.getDecoder().decode(cleanBase64)
+            val filename = imageStorage?.saveImage(
+                eventId = eventId,
+                bytes = imageBytes,
+                extension = "jpg",
+            ) ?: "uploaded_${System.currentTimeMillis()}.jpg"
 
-        val responseJson = """{"success":true,"path":"${escapeJson(filename)}","dimAlpha":$dimAlpha}"""
-        sendResponse(output, 200, "OK", "application/json", responseJson.toByteArray())
+            val responseJson = """{"success":true,"path":"${escapeJson(filename)}","dimAlpha":$dimAlpha}"""
+            sendResponse(output, 200, "OK", "application/json", responseJson.toByteArray())
+        } catch (e: Exception) {
+            val errorMsg = escapeJson(e.message ?: "Image decode failed")
+            sendResponse(output, 400, "Bad Request", "application/json", """{"success":false,"error":"$errorMsg"}""".toByteArray())
+        }
+    }
+
+    private fun handleGetImage(output: OutputStream, rawPath: String) {
+        val sanitized = File(URLDecoder.decode(rawPath, "UTF-8")).name
+        val file = imageStorage?.getImageFile(sanitized)
+        if (file != null && file.exists() && file.isFile) {
+            val bytes = file.readBytes()
+            sendResponse(output, 200, "OK", "image/jpeg", bytes)
+        } else {
+            sendResponse(output, 404, "Not Found", "application/json", """{"error":"Image not found"}""".toByteArray())
+        }
     }
 
     private fun parseEventFromJson(jsonEl: JsonObject, existingId: String?): CountdownEvent {

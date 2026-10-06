@@ -108,9 +108,12 @@ header { display: flex; justify-content: space-between; align-items: center; pad
   <button class="btn-icon" onclick="loadEvents()">🔄 刷新</button>
 </header>
 
-<div class="status-bar">
-  <div class="status-dot"></div>
-  <span>已与手表建立双向安全会话</span>
+<div class="status-bar" style="display: flex; justify-content: space-between; align-items: center;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <div class="status-dot"></div>
+    <span id="syncStatusText">已与手表建立双向安全会话</span>
+  </div>
+  <button type="button" class="btn-icon" style="padding: 4px 10px; font-size: 11px;" onclick="loadEvents()">🔄 刷新</button>
 </div>
 
 <div id="eventList" class="event-list">
@@ -250,7 +253,7 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 
               <div class="slider-group">
                 <span>缩放</span>
-                <input type="range" id="zoomSlider" min="0.5" max="3.0" step="0.05" value="1" oninput="onZoomSliderChanged(this.value)">
+                <input type="range" id="zoomSlider" min="1.0" max="3.0" step="0.05" value="1" oninput="onZoomSliderChanged(this.value)">
               </div>
 
               <div class="slider-group">
@@ -258,6 +261,8 @@ header { display: flex; justify-content: space-between; align-items: center; pad
                 <input type="range" id="dimSlider" min="0.2" max="0.8" step="0.05" value="0.45" oninput="onDimSliderChanged(this.value)">
                 <span id="dimValText">45%</span>
               </div>
+
+              <button type="button" class="btn-icon btn-danger" style="width: 100%; margin-top: 10px; padding: 8px;" onclick="clearCustomPhoto()">🗑️ 清除照片 (恢复默认微光)</button>
             </div>
           </div>
         </div>
@@ -270,7 +275,7 @@ header { display: flex; justify-content: space-between; align-items: center; pad
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button type="button" class="btn-icon" style="flex: 1; padding: 12px;" onclick="closeModal()">取消</button>
-        <button type="submit" class="btn-add" style="position: static; flex: 2; margin: 0; padding: 12px;">保存并同步到手表</button>
+        <button type="submit" id="btnSubmitEvent" class="btn-add" style="position: static; flex: 2; margin: 0; padding: 12px;">保存并同步到手表</button>
       </div>
     </form>
   </div>
@@ -470,6 +475,8 @@ function openCreateModal() {
   switchBgTab("PRESET");
   document.getElementById("presetBgSelect").value = "DEFAULT";
   customImageUploadedPath = null;
+  studioImg = null;
+  document.getElementById("photoStudioBox").style.display = "none";
 
   document.getElementById("modalOverlay").classList.add("active");
 }
@@ -511,16 +518,31 @@ function openEditModal(id) {
 
   selectColor(evt.colorType || "Default", evt.colorHex || "#1e222b");
 
-  if (evt.background && evt.background.type === "IMAGE") {
+  if (evt.background && evt.background.type === "IMAGE" && evt.background.path) {
     switchBgTab("PHOTO");
     customImageUploadedPath = evt.background.path;
     customImageDimAlpha = evt.background.dimAlpha || 0.45;
     document.getElementById("dimSlider").value = customImageDimAlpha;
     document.getElementById("dimValText").innerText = Math.round(customImageDimAlpha * 100) + "%";
+
+    var existingImg = new Image();
+    existingImg.crossOrigin = "anonymous";
+    existingImg.onload = function() {
+      studioImg = existingImg;
+      studioScale = 1.0;
+      studioOffsetX = 0;
+      studioOffsetY = 0;
+      document.getElementById("photoStudioBox").style.display = "block";
+      document.getElementById("zoomSlider").value = "1";
+      renderStudioCanvas();
+    };
+    existingImg.src = "/api/images/" + encodeURIComponent(evt.background.path) + "?token=" + TOKEN;
   } else {
     switchBgTab("PRESET");
     document.getElementById("presetBgSelect").value = (evt.background && evt.background.presetKey) || "DEFAULT";
     customImageUploadedPath = null;
+    studioImg = null;
+    document.getElementById("photoStudioBox").style.display = "none";
   }
 
   document.getElementById("modalOverlay").classList.add("active");
@@ -551,25 +573,42 @@ function switchBgTab(tab) {
   document.getElementById("photoBgSection").style.display = isPreset ? "none" : "block";
 }
 
+var studioBlobUrl = null;
+
 function onPhotoSelected(e) {
   var file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  var reader = new FileReader();
-  reader.onload = function(evt) {
-    var img = new Image();
-    img.onload = function() {
-      studioImg = img;
-      studioScale = 1.0;
-      studioOffsetX = 0;
-      studioOffsetY = 0;
-      document.getElementById("photoStudioBox").style.display = "block";
-      document.getElementById("zoomSlider").value = "1";
-      renderStudioCanvas();
-    };
-    img.src = evt.target.result;
+  if (studioBlobUrl) {
+    URL.revokeObjectURL(studioBlobUrl);
+    studioBlobUrl = null;
+  }
+  studioBlobUrl = URL.createObjectURL(file);
+  var img = new Image();
+  img.onload = function() {
+    studioImg = img;
+    studioScale = 1.0;
+    studioOffsetX = 0;
+    studioOffsetY = 0;
+    document.getElementById("photoStudioBox").style.display = "block";
+    document.getElementById("zoomSlider").value = "1";
+    renderStudioCanvas();
   };
-  reader.readAsDataURL(file);
+  img.src = studioBlobUrl;
+}
+
+function clearCustomPhoto() {
+  studioImg = null;
+  if (studioBlobUrl) {
+    URL.revokeObjectURL(studioBlobUrl);
+    studioBlobUrl = null;
+  }
+  customImageUploadedPath = null;
+  document.getElementById("photoStudioBox").style.display = "none";
+  document.getElementById("photoFileInput").value = "";
+  switchBgTab("PRESET");
+  document.getElementById("presetBgSelect").value = "DEFAULT";
+  showToast("已清除照片背景");
 }
 
 function setWatchMaskShape(shape) {
@@ -627,23 +666,26 @@ function renderStudioCanvas() {
 
 var canvasWrap = document.getElementById("canvasWrapper");
 canvasWrap.addEventListener("mousedown", function(e) {
+  var factor = 360 / (canvasWrap.clientWidth || 260);
   isDragging = true;
-  dragStartX = e.clientX - studioOffsetX;
-  dragStartY = e.clientY - studioOffsetY;
+  dragStartX = (e.clientX * factor) - studioOffsetX;
+  dragStartY = (e.clientY * factor) - studioOffsetY;
 });
 window.addEventListener("mousemove", function(e) {
   if (!isDragging) return;
-  studioOffsetX = e.clientX - dragStartX;
-  studioOffsetY = e.clientY - dragStartY;
+  var factor = 360 / (canvasWrap.clientWidth || 260);
+  studioOffsetX = (e.clientX * factor) - dragStartX;
+  studioOffsetY = (e.clientY * factor) - dragStartY;
   renderStudioCanvas();
 });
 window.addEventListener("mouseup", function() { isDragging = false; });
 
 canvasWrap.addEventListener("touchstart", function(e) {
+  var factor = 360 / (canvasWrap.clientWidth || 260);
   if (e.touches.length === 1) {
     isDragging = true;
-    dragStartX = e.touches[0].clientX - studioOffsetX;
-    dragStartY = e.touches[0].clientY - studioOffsetY;
+    dragStartX = (e.touches[0].clientX * factor) - studioOffsetX;
+    dragStartY = (e.touches[0].clientY * factor) - studioOffsetY;
   } else if (e.touches.length === 2) {
     isDragging = false;
     pinchStartDist = Math.hypot(
@@ -654,9 +696,10 @@ canvasWrap.addEventListener("touchstart", function(e) {
 });
 canvasWrap.addEventListener("touchmove", function(e) {
   e.preventDefault();
+  var factor = 360 / (canvasWrap.clientWidth || 260);
   if (e.touches.length === 1 && isDragging) {
-    studioOffsetX = e.touches[0].clientX - dragStartX;
-    studioOffsetY = e.touches[0].clientY - dragStartY;
+    studioOffsetX = (e.touches[0].clientX * factor) - dragStartX;
+    studioOffsetY = (e.touches[0].clientY * factor) - dragStartY;
     renderStudioCanvas();
   } else if (e.touches.length === 2) {
     var dist = Math.hypot(
@@ -664,7 +707,7 @@ canvasWrap.addEventListener("touchmove", function(e) {
       e.touches[0].clientY - e.touches[1].clientY
     );
     var delta = dist / (pinchStartDist || dist);
-    studioScale = Math.max(0.5, Math.min(3.0, studioScale * delta));
+    studioScale = Math.max(1.0, Math.min(3.0, studioScale * delta));
     document.getElementById("zoomSlider").value = studioScale.toFixed(2);
     pinchStartDist = dist;
     renderStudioCanvas();
@@ -676,6 +719,11 @@ async function handleFormSubmit(e) {
   e.preventDefault();
   var id = document.getElementById("editEventId").value;
   var isCreate = !id;
+  var saveBtn = document.getElementById("btnSubmitEvent");
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerText = "正在保存并同步...";
+  }
 
   var backgroundPayload = { type: "DEFAULT" };
   var isPhotoTab = document.getElementById("bgTabPhoto").classList.contains("active");
@@ -769,12 +817,18 @@ async function handleFormSubmit(e) {
     loadEvents();
   } catch (err) {
     alert("保存失败：" + err.message);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "保存并同步到手表";
+    }
   }
 }
 
 initColorSwatches();
 initBgPresets();
 loadEvents();
+window.addEventListener("focus", function() { loadEvents(); });
 </script>
 </body>
 </html>

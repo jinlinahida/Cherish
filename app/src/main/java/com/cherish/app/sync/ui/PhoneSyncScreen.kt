@@ -55,6 +55,7 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -72,12 +73,16 @@ fun PhoneSyncScreen(
     calendar: LunarCalendar = remember { DefaultLunarCalendar() },
 ) {
     val haptics = rememberShirokoWearHaptics()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
+
     var connectionUrl by remember { mutableStateOf<String?>(null) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var localIp by remember { mutableStateOf<String?>(null) }
     var isConnected by remember { mutableStateOf(false) }
 
     val session = remember { SyncSession() }
+    var actualPort by remember { mutableStateOf(session.port) }
     val server = remember(session) {
         CherishHttpServer(
             session = session,
@@ -91,6 +96,15 @@ fun PhoneSyncScreen(
         )
     }
 
+    // Keep screen awake while displaying connection QR Code to allow phone camera scanning
+    DisposableEffect(Unit) {
+        val window = (context as? android.app.Activity)?.window
+        window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     // Intercept back gesture to safely terminate server
     BackHandler {
         haptics.back()
@@ -98,20 +112,25 @@ fun PhoneSyncScreen(
         onBack()
     }
 
-    // Manage server lifecycle
+    // Manage server lifecycle and clean up orphaned images on exit
     DisposableEffect(server) {
         onDispose {
             server.stop()
+            val activePaths = repository.getAll().mapNotNull {
+                (it.background as? com.cherish.app.event.model.EventBackground.Image)?.path
+            }.toSet()
+            imageStorage?.cleanupOrphanedImages(activePaths)
         }
     }
 
-    LaunchedEffect(Unit) {
-        withContext(Dispatchers.IO) {
+    fun checkNetworkAndStart() {
+        coroutineScope.launch(Dispatchers.IO) {
             val ip = session.resolveLocalIpAddress()
             localIp = ip
 
             if (ip != null) {
                 val boundPort = server.start()
+                actualPort = boundPort
                 val url = "http://$ip:$boundPort/?token=${session.token}"
                 connectionUrl = url
 
@@ -121,6 +140,10 @@ fun PhoneSyncScreen(
                 qrBitmap = bitmap
             }
         }
+    }
+
+    LaunchedEffect(Unit) {
+        checkNetworkAndStart()
     }
 
     ShirokoWearScalingRotaryColumn(
@@ -163,6 +186,26 @@ fun PhoneSyncScreen(
                             textAlign = TextAlign.Center,
                         )
                     }
+                }
+            }
+
+            item(key = "btn_retry_network") {
+                ShirokoWearCardButton(
+                    onClick = {
+                        haptics.click()
+                        checkNetworkAndStart()
+                    },
+                    modifier = Modifier.semantics {
+                        role = Role.Button
+                        contentDescription = "重新检测本地网络"
+                    },
+                ) {
+                    Text(
+                        text = "🔄 重新检测网络",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ShirokoWearTheme.colors.accentGold,
+                    )
                 }
             }
         } else {
@@ -220,7 +263,17 @@ fun PhoneSyncScreen(
             // Address text
             item(key = "ip_address_text") {
                 Text(
-                    text = "http://$localIp:${server.session.port}/",
+                    text = "http://$localIp:$actualPort/",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            item(key = "ip_hint_text") {
+                Text(
+                    text = "请确保手机与手表连接同一 Wi-Fi 或手机热点",
                     style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

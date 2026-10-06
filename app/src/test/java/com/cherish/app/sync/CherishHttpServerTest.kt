@@ -211,4 +211,76 @@ class CherishHttpServerTest {
         assertEquals("e2", reordered[0].id)
         assertEquals("e1", reordered[1].id)
     }
+
+    @Test
+    fun `GET api images endpoint serves stored image bytes and returns 404 for missing image`() {
+        val testBytes = byteArrayOf(10, 20, 30, 40)
+        val filename = imageStorage.saveImage("img-serve-test", testBytes)
+
+        // 1. Fetch existing image
+        val (codeOk, _) = request("/api/images/$filename?token=${session.token}")
+        assertEquals(200, codeOk)
+
+        // 2. Fetch nonexistent image
+        val (codeMissing, _) = request("/api/images/nonexistent.jpg?token=${session.token}")
+        assertEquals(404, codeMissing)
+    }
+
+    @Test
+    fun `upload-image endpoint with malformed base64 returns 400 Bad Request`() {
+        val badJson = """{"base64":"not_valid_base64!!!","eventId":"err-test"}"""
+        val (code, response) = request("/api/upload-image?token=${session.token}", "POST", badJson)
+        assertEquals(400, code)
+        assertTrue(response.contains("\"success\":false"))
+    }
+
+    @Test
+    fun `server stop invalidates old session and fresh session starts cleanly`() {
+        server.stop()
+        val newSession = SyncSession(port = 0)
+        val newServer = CherishHttpServer(
+            session = newSession,
+            repository = repository,
+            imageStorage = imageStorage,
+            calendar = calendar,
+        )
+        val newPort = newServer.start()
+        port = newPort
+
+        try {
+            // Old token from previous session is rejected (403)
+            val (codeOld, _) = request("/api/status?token=${session.token}")
+            assertEquals(403, codeOld)
+
+            // New token from fresh session is accepted (200)
+            val (codeNew, _) = request("/api/status?token=${newSession.token}")
+            assertEquals(200, codeNew)
+        } finally {
+            newServer.stop()
+        }
+    }
+
+    @Test
+    fun `concurrent requests from simulated multiple clients execute thread-safely`() {
+        val threads = (1..6).map { i ->
+            Thread {
+                val json = """
+                    {
+                      "title": "并发事件 $i",
+                      "emoji": "🔥",
+                      "isPinned": false,
+                      "isLunar": false,
+                      "solarDateStr": "2026-11-0$i",
+                      "category": "WORK"
+                    }
+                """.trimIndent()
+                request("/api/events?token=${session.token}", "POST", json)
+            }
+        }
+        threads.forEach { it.start() }
+        threads.forEach { it.join() }
+
+        val all = repository.getAll()
+        assertEquals(6, all.size)
+    }
 }
