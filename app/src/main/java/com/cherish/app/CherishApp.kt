@@ -19,6 +19,7 @@ import androidx.wear.compose.foundation.pager.HorizontalPager
 import androidx.wear.compose.foundation.pager.rememberPagerState
 import com.cherish.app.detail.EventDetailScreen
 import com.cherish.app.detail.mapper.EventDetailMapper
+import com.cherish.app.event.model.EventBackground
 import com.cherish.app.event.repository.EventRepository
 import com.cherish.app.home.HomeScreen
 import com.cherish.app.home.HomeViewModel
@@ -102,7 +103,11 @@ fun CherishApp(
 
     // System back on child routes pops according to route hierarchy
     BackHandler(enabled = currentRoute !is CherishRoute.Home && currentRoute !is CherishRoute.Settings) {
-        val target = resolveBackRoute(currentRoute)
+        val target = if (currentRoute is CherishRoute.Editor && fromRoute is CherishRoute.Home) {
+            CherishRoute.Home
+        } else {
+            resolveBackRoute(currentRoute)
+        }
         if (target != null) {
             haptics.back()
             navigateTo(target)
@@ -198,6 +203,11 @@ fun CherishApp(
                             navigateTo(CherishRoute.Editor(id))
                         },
                         onDeleteConfirm = { id ->
+                            val eventToDelete = repository.getById(id)
+                            val bg = eventToDelete?.background
+                            if (bg is EventBackground.Image) {
+                                imageStorage?.deleteImage(bg.path)
+                            }
                             repository.delete(id)
                             val target = resolveBackRoute(route) ?: CherishRoute.Home
                             navigateTo(target)
@@ -236,9 +246,16 @@ fun CherishApp(
                                     haptics.click()
                                     navigateTo(CherishRoute.Home)
                                 } else {
+                                    if (existingEvent != null) {
+                                        val oldBg = existingEvent.background
+                                        if (oldBg is EventBackground.Image && oldBg.path != (event.background as? EventBackground.Image)?.path) {
+                                            imageStorage?.deleteImage(oldBg.path)
+                                        }
+                                    }
                                     repository.update(event)
                                     haptics.click()
-                                    navigateTo(CherishRoute.Detail(event.id))
+                                    val returnTarget = if (fromRoute is CherishRoute.Home) CherishRoute.Home else CherishRoute.Detail(event.id)
+                                    navigateTo(returnTarget)
                                 }
                             } catch (e: Exception) {
                                 // Keep on editor screen if persistent write failed
@@ -246,7 +263,7 @@ fun CherishApp(
                         }
                     },
                     onCancel = {
-                        val target = resolveBackRoute(route) ?: CherishRoute.Home
+                        val target = if (fromRoute is CherishRoute.Home) CherishRoute.Home else (resolveBackRoute(route) ?: CherishRoute.Home)
                         haptics.back()
                         navigateTo(target)
                     },

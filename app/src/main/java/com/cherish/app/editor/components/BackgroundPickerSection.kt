@@ -217,6 +217,24 @@ fun BackgroundPickerSection(
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        ShirokoWearSelectableButton(
+                            selected = false,
+                            onClick = {
+                                haptics.click()
+                                onBackgroundChange(EventBackground.Default)
+                            },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            modifier = Modifier.semantics {
+                                contentDescription = "清除图片并恢复默认微光背景"
+                            },
+                        ) {
+                            Text(
+                                text = "清除图片 (恢复默认)",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = ShirokoWearTheme.colors.accentCopper,
+                            )
+                        }
                     }
                 }
             }
