@@ -65,6 +65,7 @@ fun SettingsScreen(
     settings: AppSettings,
     eventCount: Int,
     onUpdateSettings: (AppSettings) -> Unit,
+    onNavigateToCreateEvent: () -> Unit = {},
     onNavigateToEventOrder: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onBack: (() -> Unit)? = null,
@@ -100,6 +101,48 @@ fun SettingsScreen(
                             )
                         }
 
+                        // Event Group Header
+                        item(key = "group_events_header") {
+                            Text(
+                                text = "事件",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = ShirokoWearTheme.colors.accentGold,
+                                modifier = Modifier
+                                    .padding(start = 4.dp, top = 2.dp)
+                                    .semantics { heading() },
+                            )
+                        }
+
+                        // Create New Event Shortcut
+                        item(key = "item_create_event") {
+                            ShirokoWearSettingsItem(
+                                title = "新建倒数日",
+                                subtitle = "添加新的纪念日或目标",
+                                onClick = {
+                                    haptics.click()
+                                    onNavigateToCreateEvent()
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "新建倒数日，点击添加新的纪念日或目标"
+                                },
+                            )
+                        }
+
+                        // Event Order
+                        item(key = "item_event_order") {
+                            ShirokoWearSettingsItem(
+                                title = "事件排序",
+                                subtitle = "$eventCount 个事件",
+                                onClick = {
+                                    haptics.click()
+                                    onNavigateToEventOrder()
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "事件排序，共 $eventCount 个事件，点击调整顺序"
+                                },
+                            )
+                        }
+
                         // Display Group Header
                         item(key = "group_display_header") {
                             Text(
@@ -107,7 +150,7 @@ fun SettingsScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = ShirokoWearTheme.colors.accentGold,
                                 modifier = Modifier
-                                    .padding(start = 4.dp, top = 2.dp)
+                                    .padding(start = 4.dp, top = 4.dp)
                                     .semantics { heading() },
                             )
                         }
@@ -133,21 +176,6 @@ fun SettingsScreen(
                                         currentValue = modeLabel,
                                         actionHint = "点击切换",
                                     )
-                                },
-                            )
-                        }
-
-                        // Event Order
-                        item(key = "item_event_order") {
-                            ShirokoWearSettingsItem(
-                                title = "事件排序",
-                                subtitle = "$eventCount 个事件",
-                                onClick = {
-                                    haptics.click()
-                                    onNavigateToEventOrder()
-                                },
-                                modifier = Modifier.semantics {
-                                    contentDescription = "事件排序，共 $eventCount 个事件，点击调整顺序"
                                 },
                             )
                         }

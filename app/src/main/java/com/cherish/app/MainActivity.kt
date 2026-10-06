@@ -40,6 +40,15 @@ class MainActivity : ComponentActivity() {
             settingsRepository = settingsRepository,
         )
 
+        kotlin.concurrent.thread(name = "cherish-orphan-cleanup") {
+            runCatching {
+                val activePaths = repository.getAll().mapNotNull {
+                    (it.background as? com.cherish.app.event.model.EventBackground.Image)?.path
+                }.toSet()
+                imageStorage.cleanupOrphanedImages(activePaths)
+            }
+        }
+
         setContent {
             val settings by settingsRepository.settings.collectAsState()
             val screenShape = rememberScreenShape()

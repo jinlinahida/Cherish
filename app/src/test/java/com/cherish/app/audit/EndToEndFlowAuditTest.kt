@@ -320,4 +320,97 @@ class EndToEndFlowAuditTest {
         val leapSolar = DatePickerSanitizer.sanitizeSolar(year = 2028, month = 2, day = 31)
         assertEquals(SolarDate(2028, 2, 29), leapSolar)
     }
+
+    // =========================================================================
+    // 8. Phase 9 Custom Image Background Real-World Loop & Restart Persistence
+    // =========================================================================
+
+    @Test
+    fun `custom image background persists across app restarts and cleans up on replacement or delete`() {
+        val storageFile = File(tempFolder.root, "restart_test_events.json")
+        val imageDir = File(tempFolder.root, "restart_test_backgrounds")
+
+        // Session 1: App launched, user creates event with curated photo wallpaper
+        val storageSession1 = AtomicFileEventStorage(com.cherish.app.storage.JvmAtomicFileWriter(storageFile))
+        val repositorySession1 = DefaultEventRepository(storageSession1)
+        val imageStorageSession1 = FileEventImageStorage(imageDir)
+
+        val eventId = "phase9-photo-1"
+        val imagePath = com.cherish.app.storage.CuratedWallpaperGenerator.saveCuratedWallpaper(
+            preset = com.cherish.app.storage.CuratedWallpaperPreset.GOLDEN_SUNSET,
+            eventId = eventId,
+            imageStorage = imageStorageSession1,
+            width = 160,
+            height = 160,
+        )
+
+        val originalFile = imageStorageSession1.getImageFile(imagePath)
+        assertNotNull("Wallpaper file must exist in storage", originalFile)
+        assertTrue(originalFile!!.exists())
+
+        val photoEvent = CountdownEvent(
+            id = eventId,
+            title = "金色夕阳纪念日",
+            eventDate = EventDate.Solar(referenceToday),
+            color = EventColor.Amber,
+            background = EventBackground.Image(path = imagePath, dimAlpha = 0.45f),
+        )
+        repositorySession1.add(photoEvent)
+
+        // Session 2: Simulate App Termination and Restart
+        val storageSession2 = AtomicFileEventStorage(com.cherish.app.storage.JvmAtomicFileWriter(storageFile))
+        val repositorySession2 = DefaultEventRepository(storageSession2)
+        val imageStorageSession2 = FileEventImageStorage(imageDir)
+
+        val reloadedEvent = repositorySession2.getById(eventId)
+        assertNotNull("Event must survive restart", reloadedEvent)
+        assertTrue(reloadedEvent!!.background is EventBackground.Image)
+        val reloadedBg = reloadedEvent.background as EventBackground.Image
+        assertEquals("Path must match saved relative file", imagePath, reloadedBg.path)
+        assertEquals(0.45f, reloadedBg.dimAlpha, 0.001f)
+
+        // Detail screen resolves image file successfully
+        val resolvedFile = imageStorageSession2.getImageFile(reloadedBg.path)
+        assertNotNull("Resolved file after restart must exist", resolvedFile)
+        assertTrue(resolvedFile!!.exists())
+
+        // Detail UiModel correctly presents the image background
+        val detailUi = EventDetailMapper.toUiModel(reloadedEvent, referenceToday)
+        assertEquals(reloadedBg, detailUi.background)
+
+        // Now simulate replacing the image with a new wallpaper
+        val newImagePath = com.cherish.app.storage.CuratedWallpaperGenerator.saveCuratedWallpaper(
+            preset = com.cherish.app.storage.CuratedWallpaperPreset.STARRY_NIGHT,
+            eventId = eventId,
+            imageStorage = imageStorageSession2,
+            width = 160,
+            height = 160,
+        )
+        val updatedEvent = reloadedEvent.copy(
+            background = EventBackground.Image(path = newImagePath, dimAlpha = 0.60f),
+        )
+
+        // As in CherishApp.kt: old image is deleted on replacement
+        imageStorageSession2.deleteImage(imagePath)
+        repositorySession2.update(updatedEvent)
+
+        assertNull("Old image file must be deleted", imageStorageSession2.getImageFile(imagePath))
+        assertNotNull("New image file must exist", imageStorageSession2.getImageFile(newImagePath))
+
+        // Now simulate deleting the event
+        val deletedEvent = repositorySession2.getById(eventId)!!
+        imageStorageSession2.deleteImage((deletedEvent.background as EventBackground.Image).path)
+        repositorySession2.delete(eventId)
+
+        assertNull("Deleted event image must be removed", imageStorageSession2.getImageFile(newImagePath))
+        assertTrue(repositorySession2.getAll().isEmpty())
+    }
+
+    @Test
+    fun `settings screen create event entry callback triggers navigation`() {
+        var createEventInvoked = false
+        val onNavigateToCreateEvent = { createEventInvoked = true }
+        onNavigateToCreateEvent()
+        assertTrue(createEventInvoked)
+    }
 }

@@ -105,6 +105,8 @@ fun CherishApp(
     BackHandler(enabled = currentRoute !is CherishRoute.Home && currentRoute !is CherishRoute.Settings) {
         val target = if (currentRoute is CherishRoute.Editor && fromRoute is CherishRoute.Home) {
             CherishRoute.Home
+        } else if (currentRoute is CherishRoute.Editor && fromRoute is CherishRoute.Settings) {
+            CherishRoute.Settings
         } else {
             resolveBackRoute(currentRoute)
         }
@@ -146,6 +148,10 @@ fun CherishApp(
                                 eventCount = events.size,
                                 onUpdateSettings = { newSettings ->
                                     settingsRepository.update { newSettings }
+                                },
+                                onNavigateToCreateEvent = {
+                                    haptics.click()
+                                    navigateTo(CherishRoute.Editor(null))
                                 },
                                 onNavigateToEventOrder = {
                                     haptics.click()
@@ -263,7 +269,13 @@ fun CherishApp(
                         }
                     },
                     onCancel = {
-                        val target = if (fromRoute is CherishRoute.Home) CherishRoute.Home else (resolveBackRoute(route) ?: CherishRoute.Home)
+                        val target = if (fromRoute is CherishRoute.Home) {
+                            CherishRoute.Home
+                        } else if (fromRoute is CherishRoute.Settings) {
+                            CherishRoute.Settings
+                        } else {
+                            (resolveBackRoute(route) ?: CherishRoute.Home)
+                        }
                         haptics.back()
                         navigateTo(target)
                     },

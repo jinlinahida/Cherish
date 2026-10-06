@@ -550,7 +550,7 @@ internal fun EventDetailBackground(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = maxOf(0.40f, background.dimAlpha))),
+                            .background(Color.Black.copy(alpha = background.dimAlpha.coerceIn(0.20f, 0.85f))),
                     )
                     // Radial bezel vignette
                     Box(
