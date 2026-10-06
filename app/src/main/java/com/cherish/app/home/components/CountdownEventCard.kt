@@ -10,9 +10,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,6 +34,7 @@ import com.cherish.app.home.model.CountdownDisplayStatus
 import com.cherish.app.home.model.CountdownTypographyTier
 import com.cherish.app.home.model.HomeEventUiModel
 import com.cherish.app.home.model.resolveCountdownTypographyTier
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
@@ -52,9 +62,36 @@ fun CountdownEventCard(
     }
 
     val cardShape = if (isCompact) ShirokoWearShapes.cardCompact else ShirokoWearShapes.card
+    val cardA11yDescription = remember(uiModel) {
+        AccessibilityPresentation.buildEventCardAccessibilityDescription(uiModel)
+    }
+    val customActions = remember(uiModel.event.id, onLongClick) {
+        if (onLongClick != null) {
+            listOf(
+                CustomAccessibilityAction(label = "编辑事件") {
+                    onLongClick()
+                    true
+                },
+            )
+        } else {
+            emptyList()
+        }
+    }
 
     ShirokoWearCard(
-        modifier = modifier,
+        modifier = modifier.semantics(mergeDescendants = true) {
+            contentDescription = cardA11yDescription
+            role = Role.Button
+            if (onClick != null) {
+                onClick(label = "查看事件详情") {
+                    onClick()
+                    true
+                }
+            }
+            if (customActions.isNotEmpty()) {
+                this.customActions = customActions
+            }
+        },
         shape = cardShape,
         highlighted = uiModel.isPinned,
         highlightColor = highlightColor,
@@ -107,6 +144,7 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
                 Text(
                     text = uiModel.event.emoji,
                     style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.clearAndSetSemantics { },
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
@@ -121,7 +159,9 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
                 Text(
                     text = "📌",
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(start = 4.dp),
+                    modifier = Modifier
+                        .padding(start = 4.dp)
+                        .clearAndSetSemantics { },
                 )
             }
         }
@@ -206,6 +246,7 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
             Text(
                 text = uiModel.event.emoji,
                 style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.clearAndSetSemantics { },
             )
             Spacer(modifier = Modifier.width(2.dp))
             Text(
@@ -221,6 +262,7 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
                 Text(
                     text = "📌",
                     style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.clearAndSetSemantics { },
                 )
             }
         }

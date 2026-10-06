@@ -7,10 +7,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.cherish.app.event.model.EventCategory
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
@@ -43,7 +51,10 @@ fun CategoryPickerSection(
         contentPadding = ShirokoWearTheme.dimens.screenPadding,
     ) {
         item(key = "title") {
-            ShirokoWearScreenTitle(text = "事件分类")
+            ShirokoWearScreenTitle(
+                text = "事件分类",
+                modifier = Modifier.semantics { heading() },
+            )
         }
 
         items(
@@ -52,22 +63,36 @@ fun CategoryPickerSection(
         ) { index ->
             val (category, label) = categories[index]
             val isSelected = currentCategory == category
+            val categorySpokenName = AccessibilityPresentation.getCategoryAccessibilityName(category)
+            val description = "$categorySpokenName${if (isSelected) "，已选中" else ""}"
             ShirokoWearSelectableButton(
                 selected = isSelected,
                 onClick = { onCategoryChange(category) },
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                    contentDescription = description
+                },
             ) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier.clearAndSetSemantics { },
                 )
             }
         }
 
         item(key = "confirm_btn") {
             Spacer(modifier = Modifier.height(4.dp))
-            ShirokoWearCardButton(onClick = onConfirm) {
+            ShirokoWearCardButton(
+                onClick = onConfirm,
+                modifier = Modifier.semantics {
+                    role = Role.Button
+                    contentDescription = "确定分类选择"
+                },
+            ) {
                 Text(
                     text = "确定",
                     style = MaterialTheme.typography.labelMedium,

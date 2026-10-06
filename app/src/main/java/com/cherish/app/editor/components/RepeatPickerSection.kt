@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
@@ -47,7 +53,10 @@ fun RepeatPickerSection(
         contentPadding = ShirokoWearTheme.dimens.screenPadding,
     ) {
         item(key = "title") {
-            ShirokoWearScreenTitle(text = "重复规则")
+            ShirokoWearScreenTitle(
+                text = "重复规则",
+                modifier = Modifier.semantics { heading() },
+            )
         }
 
         items(
@@ -60,6 +69,11 @@ fun RepeatPickerSection(
                 selected = isSelected,
                 onClick = { onRuleChange(rule) },
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                    contentDescription = "$label${if (isSelected) "，已选中" else ""}"
+                },
             ) {
                 Text(
                     text = label,
@@ -71,7 +85,12 @@ fun RepeatPickerSection(
 
         item(key = "confirm_btn") {
             Spacer(modifier = Modifier.height(4.dp))
-            ShirokoWearCardButton(onClick = onConfirm) {
+            ShirokoWearCardButton(
+                onClick = onConfirm,
+                modifier = Modifier.semantics {
+                    contentDescription = "确定重复规则"
+                },
+            ) {
                 Text(
                     text = "确定",
                     style = MaterialTheme.typography.labelMedium,

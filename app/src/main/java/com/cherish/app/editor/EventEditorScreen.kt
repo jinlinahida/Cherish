@@ -50,6 +50,13 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearSettingsItem
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearToggleCard
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.UnstableShirokoWearApi
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
@@ -103,6 +110,7 @@ fun EventEditorScreen(
                         item(key = "title") {
                             ShirokoWearScreenTitle(
                                 text = if (state.isCreateMode) "新建倒数日" else "编辑倒数日",
+                                modifier = Modifier.semantics { heading() },
                             )
                         }
 
@@ -114,6 +122,9 @@ fun EventEditorScreen(
                                     highlighted = true,
                                     highlightColor = ShirokoWearTheme.colors.accentCopper,
                                     innerPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                                    modifier = Modifier.semantics(mergeDescendants = true) {
+                                        contentDescription = "错误提示：${state.errorMessage}"
+                                    },
                                 ) {
                                     Text(
                                         text = state.errorMessage ?: "",
@@ -136,6 +147,13 @@ fun EventEditorScreen(
                             ShirokoWearSettingsItem(
                                 title = "事件名称",
                                 subtitle = displaySubtitle,
+                                modifier = Modifier.semantics(mergeDescendants = true) {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "事件名称",
+                                        currentValue = if (state.title.isBlank()) "未设置" else state.title,
+                                        actionHint = "点击修改名称与图标",
+                                    )
+                                },
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.TITLE_EMOJI
@@ -163,6 +181,13 @@ fun EventEditorScreen(
                             ShirokoWearSettingsItem(
                                 title = "目标日期",
                                 subtitle = dateSubtitle,
+                                modifier = Modifier.semantics(mergeDescendants = true) {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "目标日期",
+                                        currentValue = dateSubtitle,
+                                        actionHint = "点击修改目标日期",
+                                    )
+                                },
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.DATE
@@ -176,6 +201,13 @@ fun EventEditorScreen(
                             ShirokoWearSettingsItem(
                                 title = "重复规则",
                                 subtitle = repeatSubtitle,
+                                modifier = Modifier.semantics(mergeDescendants = true) {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "重复规则",
+                                        currentValue = repeatSubtitle,
+                                        actionHint = "点击修改重复规则",
+                                    )
+                                },
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.REPEAT
@@ -186,9 +218,17 @@ fun EventEditorScreen(
                         // Category Entry
                         item(key = "entry_category") {
                             val categorySubtitle = formatCategory(state.category)
+                            val categorySpeech = AccessibilityPresentation.getCategoryAccessibilityName(state.category)
                             ShirokoWearSettingsItem(
                                 title = "事件分类",
                                 subtitle = categorySubtitle,
+                                modifier = Modifier.semantics(mergeDescendants = true) {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "事件分类",
+                                        currentValue = categorySpeech,
+                                        actionHint = "点击修改分类",
+                                    )
+                                },
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.CATEGORY
@@ -202,6 +242,13 @@ fun EventEditorScreen(
                             ShirokoWearSettingsItem(
                                 title = "背景风格",
                                 subtitle = bgSubtitle,
+                                modifier = Modifier.semantics(mergeDescendants = true) {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "背景风格",
+                                        currentValue = bgSubtitle,
+                                        actionHint = "点击修改背景风格",
+                                    )
+                                },
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.BACKGROUND
@@ -219,6 +266,10 @@ fun EventEditorScreen(
                                 label = "置顶显示",
                                 secondaryLabel = if (state.isPinned) "已置顶于首页顶部" else "普通排序",
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.semantics {
+                                    role = Role.Switch
+                                    stateDescription = if (state.isPinned) "开启，已置顶于首页顶部" else "关闭，普通排序"
+                                },
                             )
                         }
 
@@ -242,6 +293,9 @@ fun EventEditorScreen(
                                 border = ShirokoWearButtonDefaults.highlightedBorderStroke(
                                     ShirokoWearTheme.colors.cardHighlight,
                                 ),
+                                modifier = Modifier.semantics {
+                                    contentDescription = "保存事件"
+                                },
                             ) {
                                 Text(
                                     text = "保存事件",
@@ -257,6 +311,9 @@ fun EventEditorScreen(
                                 onClick = {
                                     haptics.back()
                                     onCancel()
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "取消编辑"
                                 },
                             ) {
                                 Text(

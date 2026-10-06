@@ -14,7 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import com.cherish.app.home.model.HomeViewMode
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
@@ -47,6 +53,7 @@ fun HomeHeader(
         ShirokoWearScreenTitle(
             text = "Cherish",
             marquee = true,
+            modifier = Modifier.semantics { heading() },
         )
 
         Spacer(modifier = Modifier.height(4.dp))
@@ -56,6 +63,10 @@ fun HomeHeader(
         ) {
             if (onAddEventClick != null) {
                 ShirokoWearCard(
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = "添加事件"
+                        role = Role.Button
+                    },
                     shape = ShirokoWearShapes.cardCompact,
                     innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     outerPadding = PaddingValues(0.dp),
@@ -75,7 +86,12 @@ fun HomeHeader(
             }
 
             if (hasEvents) {
+                val modeDesc = AccessibilityPresentation.buildViewModeToggleDescription(viewMode)
                 ShirokoWearCard(
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = modeDesc
+                        role = Role.Button
+                    },
                     shape = ShirokoWearShapes.cardCompact,
                     innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     outerPadding = PaddingValues(0.dp),
@@ -97,6 +113,10 @@ fun HomeHeader(
 
             if (onSettingsClick != null) {
                 ShirokoWearCard(
+                    modifier = Modifier.semantics(mergeDescendants = true) {
+                        contentDescription = "设置"
+                        role = Role.Button
+                    },
                     shape = ShirokoWearShapes.cardCompact,
                     innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
                     outerPadding = PaddingValues(0.dp),

@@ -12,6 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
@@ -39,6 +44,7 @@ fun HomeEmptyState(
         Text(
             text = "🗓️",
             style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier.clearAndSetSemantics { },
         )
 
         Spacer(modifier = Modifier.height(6.dp))
@@ -63,6 +69,10 @@ fun HomeEmptyState(
 
         // Visual placeholder button for future event creation
         ShirokoWearCard(
+            modifier = Modifier.semantics(mergeDescendants = true) {
+                contentDescription = "添加事件"
+                role = Role.Button
+            },
             shape = ShirokoWearShapes.cardCompact,
             innerPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
             outerPadding = PaddingValues(0.dp),

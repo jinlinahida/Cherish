@@ -15,6 +15,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.MaterialTheme
@@ -84,7 +91,10 @@ fun DatePickerSection(
         contentPadding = ShirokoWearTheme.dimens.screenPadding,
     ) {
         item(key = "title") {
-            ShirokoWearScreenTitle(text = "设置日期")
+            ShirokoWearScreenTitle(
+                text = "设置日期",
+                modifier = Modifier.semantics { heading() },
+            )
         }
 
         // Calendar type toggle: 公历 / 农历
@@ -98,7 +108,13 @@ fun DatePickerSection(
                 ShirokoWearSelectableButton(
                     selected = !isLunar,
                     onClick = { onDateTypeChange(false) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics {
+                            role = Role.RadioButton
+                            selected = !isLunar
+                            contentDescription = "公历${if (!isLunar) "，已选中" else ""}"
+                        },
                     contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
                     Text("公历", style = MaterialTheme.typography.labelSmall)
@@ -106,7 +122,13 @@ fun DatePickerSection(
                 ShirokoWearSelectableButton(
                     selected = isLunar,
                     onClick = { onDateTypeChange(true) },
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics {
+                            role = Role.RadioButton
+                            selected = isLunar
+                            contentDescription = "农历${if (isLunar) "，已选中" else ""}"
+                        },
                     contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
                     Text("农历", style = MaterialTheme.typography.labelSmall)
@@ -149,7 +171,12 @@ fun DatePickerSection(
                         }
                     },
                     labelProvider = { "$it" },
-                    modifier = Modifier.weight(1.3f),
+                    modifier = Modifier
+                        .weight(1.3f)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "年份选择器"
+                            stateDescription = "${years[yearIndex]}年"
+                        },
                 )
 
                 // Month Wheel
@@ -177,7 +204,12 @@ fun DatePickerSection(
                         }
                     },
                     labelProvider = { "%02d月".format(it) },
-                    modifier = Modifier.weight(1.0f),
+                    modifier = Modifier
+                        .weight(1.0f)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "月份选择器"
+                            stateDescription = "${months[monthIndex]}月"
+                        },
                 )
 
                 // Day Wheel
@@ -205,7 +237,12 @@ fun DatePickerSection(
                         }
                     },
                     labelProvider = { "%02d日".format(it) },
-                    modifier = Modifier.weight(1.0f),
+                    modifier = Modifier
+                        .weight(1.0f)
+                        .semantics(mergeDescendants = true) {
+                            contentDescription = "日期选择器"
+                            stateDescription = "${days[dayIndex]}日"
+                        },
                 )
             }
         }
@@ -228,6 +265,10 @@ fun DatePickerSection(
                     label = "闰月",
                     secondaryLabel = "当年农历闰${lunarDate.month}月",
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                    modifier = Modifier.semantics {
+                        role = Role.Switch
+                        stateDescription = if (lunarDate.isLeapMonth) "开启，当年农历闰${lunarDate.month}月" else "关闭，平月"
+                    },
                 )
             }
         }
@@ -245,14 +286,21 @@ fun DatePickerSection(
                 style = MaterialTheme.typography.bodySmall,
                 color = ShirokoWearTheme.colors.accentGold,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics(mergeDescendants = true) { },
             )
         }
 
         // Confirm button
         item(key = "confirm_btn") {
             Spacer(modifier = Modifier.height(4.dp))
-            ShirokoWearCardButton(onClick = onConfirm) {
+            ShirokoWearCardButton(
+                onClick = onConfirm,
+                modifier = Modifier.semantics {
+                    contentDescription = "确定日期设置"
+                },
+            ) {
                 Text(
                     text = "确定",
                     style = MaterialTheme.typography.labelMedium,

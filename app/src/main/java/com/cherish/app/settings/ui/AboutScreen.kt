@@ -12,6 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
@@ -42,7 +47,10 @@ fun AboutScreen(
             contentPadding = ShirokoWearTheme.dimens.screenPadding,
         ) {
             item(key = "title") {
-                ShirokoWearScreenTitle(text = "关于")
+                ShirokoWearScreenTitle(
+                    text = "关于",
+                    modifier = Modifier.semantics { heading() },
+                )
             }
 
             // App Identity Header Card
@@ -53,7 +61,11 @@ fun AboutScreen(
                     outerPadding = PaddingValues(vertical = 2.dp),
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics(mergeDescendants = true) {
+                                contentDescription = "Cherish，Wear OS 优雅倒数日"
+                            },
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
@@ -100,6 +112,10 @@ fun AboutScreen(
                         haptics.back()
                         onBack()
                     },
+                    modifier = Modifier.semantics {
+                        role = Role.Button
+                        contentDescription = "返回上一页"
+                    },
                 ) {
                     Text(
                         text = "返回",
@@ -119,7 +135,11 @@ private fun AboutDetailRow(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = "$label：$value"
+            },
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

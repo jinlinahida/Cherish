@@ -14,6 +14,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -21,6 +27,7 @@ import androidx.wear.compose.material3.Button
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.cherish.app.event.model.CountdownEvent
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearButtonDefaults
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
@@ -53,7 +60,10 @@ fun EventOrderScreen(
             contentPadding = ShirokoWearTheme.dimens.screenPadding,
         ) {
             item(key = "title") {
-                ShirokoWearScreenTitle(text = "事件排序")
+                ShirokoWearScreenTitle(
+                    text = "事件排序",
+                    modifier = Modifier.semantics { heading() },
+                )
             }
 
             if (events.isEmpty()) {
@@ -94,6 +104,10 @@ fun EventOrderScreen(
                         haptics.back()
                         onBack()
                     },
+                    modifier = Modifier.semantics {
+                        role = Role.Button
+                        contentDescription = "完成排序"
+                    },
                 ) {
                     Text(
                         text = "完成",
@@ -127,9 +141,19 @@ private fun EventOrderItemCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            val itemDescription = AccessibilityPresentation.buildEventOrderItemDescription(
+                title = event.title,
+                index = index,
+                totalCount = totalCount,
+                isPinned = event.isPinned,
+            )
             // Event info: Emoji + Title + Pin badge + Position
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = itemDescription
+                    },
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Row(
@@ -138,6 +162,7 @@ private fun EventOrderItemCard(
                     Text(
                         text = event.emoji,
                         style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.clearAndSetSemantics { },
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
@@ -154,6 +179,7 @@ private fun EventOrderItemCard(
                         Text(
                             text = "📌",
                             style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.clearAndSetSemantics { },
                         )
                     }
                 }
@@ -175,7 +201,11 @@ private fun EventOrderItemCard(
                 Button(
                     onClick = onMoveUp,
                     enabled = index > 0,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier
+                        .size(34.dp)
+                        .semantics {
+                            contentDescription = AccessibilityPresentation.buildEventOrderMoveUpDescription(event.title)
+                        },
                     contentPadding = PaddingValues(0.dp),
                     colors = ShirokoWearButtonDefaults.buttonColors(),
                     border = ShirokoWearButtonDefaults.borderStroke,
@@ -184,13 +214,18 @@ private fun EventOrderItemCard(
                         text = "▲",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clearAndSetSemantics { },
                     )
                 }
 
                 Button(
                     onClick = onMoveDown,
                     enabled = index < totalCount - 1,
-                    modifier = Modifier.size(34.dp),
+                    modifier = Modifier
+                        .size(34.dp)
+                        .semantics {
+                            contentDescription = AccessibilityPresentation.buildEventOrderMoveDownDescription(event.title)
+                        },
                     contentPadding = PaddingValues(0.dp),
                     colors = ShirokoWearButtonDefaults.buttonColors(),
                     border = ShirokoWearButtonDefaults.borderStroke,
@@ -199,6 +234,7 @@ private fun EventOrderItemCard(
                         text = "▼",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clearAndSetSemantics { },
                     )
                 }
             }

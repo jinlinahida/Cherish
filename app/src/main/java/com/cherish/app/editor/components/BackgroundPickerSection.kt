@@ -6,6 +6,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
@@ -44,7 +50,10 @@ fun BackgroundPickerSection(
         contentPadding = ShirokoWearTheme.dimens.screenPadding,
     ) {
         item(key = "title") {
-            ShirokoWearScreenTitle(text = "背景风格")
+            ShirokoWearScreenTitle(
+                text = "背景风格",
+                modifier = Modifier.semantics { heading() },
+            )
         }
 
         items(
@@ -57,6 +66,11 @@ fun BackgroundPickerSection(
                 selected = isSelected,
                 onClick = { onBackgroundChange(bg) },
                 contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.semantics {
+                    role = Role.RadioButton
+                    selected = isSelected
+                    contentDescription = "$label${if (isSelected) "，已选中" else ""}"
+                },
             ) {
                 Text(
                     text = label,
@@ -68,7 +82,13 @@ fun BackgroundPickerSection(
 
         item(key = "confirm_btn") {
             Spacer(modifier = Modifier.height(4.dp))
-            ShirokoWearCardButton(onClick = onConfirm) {
+            ShirokoWearCardButton(
+                onClick = onConfirm,
+                modifier = Modifier.semantics {
+                    role = Role.Button
+                    contentDescription = "确定背景风格选择"
+                },
+            ) {
                 Text(
                     text = "确定",
                     style = MaterialTheme.typography.labelMedium,

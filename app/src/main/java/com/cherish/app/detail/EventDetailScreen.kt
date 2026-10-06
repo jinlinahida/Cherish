@@ -41,9 +41,11 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import com.cherish.app.ui.AccessibilityPresentation
 import com.cherish.app.detail.model.DetailCountdownTypographyTier
 import com.cherish.app.detail.model.resolveDetailCountdownTypographyTier
 import com.cherish.app.home.model.CountdownDisplayStatus
@@ -90,11 +92,12 @@ fun EventDetailScreen(
         uiModel.heroUnitText,
         uiModel.targetDateDescription,
     ) {
-        when (uiModel.status) {
-            CountdownDisplayStatus.TODAY -> "今天，目标日期：${uiModel.targetDateDescription}"
-            CountdownDisplayStatus.COUNTDOWN -> "倒计时 ${uiModel.heroNumberText}${uiModel.heroUnitText}，目标日期：${uiModel.targetDateDescription}"
-            CountdownDisplayStatus.PAST -> "已过去 ${uiModel.heroNumberText} 天，起始日期：${uiModel.targetDateDescription}"
-        }
+        AccessibilityPresentation.buildDetailHeroAccessibilityDescription(
+            status = uiModel.status,
+            heroNumberText = uiModel.heroNumberText,
+            heroUnitText = uiModel.heroUnitText,
+            targetDateDescription = uiModel.targetDateDescription,
+        )
     }
 
     ShirokoWearAmbient(spotlightKey = "cherish_detail") {
@@ -116,6 +119,7 @@ fun EventDetailScreen(
                             text = uiModel.event.emoji,
                             fontSize = 28.sp,
                             textAlign = TextAlign.Center,
+                            modifier = Modifier.clearAndSetSemantics { },
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                     }
@@ -194,23 +198,30 @@ fun EventDetailScreen(
                         ShirokoWearDetailField(
                             label = "日历类型",
                             value = uiModel.calendarTypeDescription,
+                            modifier = Modifier.semantics(mergeDescendants = true) { },
                         )
                         ShirokoWearDetailField(
                             label = "重复规则",
                             value = uiModel.recurrenceDescription,
+                            modifier = Modifier.semantics(mergeDescendants = true) { },
                         )
                         ShirokoWearDetailField(
                             label = "分类",
                             value = uiModel.categoryDescription,
+                            modifier = Modifier.semantics(mergeDescendants = true) { },
                         )
                         ShirokoWearDetailField(
                             label = "置顶状态",
                             value = if (uiModel.isPinned) "已置顶 📌" else "未置顶",
+                            modifier = Modifier.semantics(mergeDescendants = true) {
+                                contentDescription = "置顶状态：${if (uiModel.isPinned) "已置顶" else "未置顶"}"
+                            },
                         )
                         if (uiModel.notes.isNotBlank()) {
                             ShirokoWearDetailField(
                                 label = "备注",
                                 value = uiModel.notes,
+                                modifier = Modifier.semantics(mergeDescendants = true) { },
                             )
                         }
                     }
@@ -238,6 +249,7 @@ fun EventDetailScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = ShirokoWearTheme.colors.accentCopper,
                                 textAlign = TextAlign.Center,
+                                modifier = Modifier.semantics { heading() },
                             )
                             Text(
                                 text = "「${uiModel.event.title}」",

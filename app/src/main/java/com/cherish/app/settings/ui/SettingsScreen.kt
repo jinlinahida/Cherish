@@ -15,6 +15,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,6 +29,7 @@ import androidx.wear.compose.material3.Text
 import com.cherish.app.home.model.HomeViewMode
 import com.cherish.app.settings.model.AppContentScale
 import com.cherish.app.settings.model.AppSettings
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearContentScale
@@ -87,7 +94,10 @@ fun SettingsScreen(
                         contentPadding = ShirokoWearTheme.dimens.screenPadding,
                     ) {
                         item(key = "title") {
-                            ShirokoWearScreenTitle(text = "设置")
+                            ShirokoWearScreenTitle(
+                                text = "设置",
+                                modifier = Modifier.semantics { heading() },
+                            )
                         }
 
                         // Display Group Header
@@ -96,7 +106,9 @@ fun SettingsScreen(
                                 text = "显示",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = ShirokoWearTheme.colors.accentGold,
-                                modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+                                modifier = Modifier
+                                    .padding(start = 4.dp, top = 2.dp)
+                                    .semantics { heading() },
                             )
                         }
 
@@ -115,6 +127,13 @@ fun SettingsScreen(
                                     }
                                     onUpdateSettings(settings.copy(homeViewMode = nextMode))
                                 },
+                                modifier = Modifier.semantics {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "首页布局",
+                                        currentValue = modeLabel,
+                                        actionHint = "点击切换",
+                                    )
+                                },
                             )
                         }
 
@@ -126,6 +145,9 @@ fun SettingsScreen(
                                 onClick = {
                                     haptics.click()
                                     onNavigateToEventOrder()
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "事件排序，共 $eventCount 个事件，点击调整顺序"
                                 },
                             )
                         }
@@ -145,6 +167,13 @@ fun SettingsScreen(
                                     draftScale = settings.contentScale
                                     activeSubScreen = SettingsSubScreen.CONTENT_SCALE
                                 },
+                                modifier = Modifier.semantics {
+                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
+                                        fieldName = "内容缩放",
+                                        currentValue = scaleLabel,
+                                        actionHint = "点击选择",
+                                    )
+                                },
                             )
                         }
 
@@ -154,7 +183,9 @@ fun SettingsScreen(
                                 text = "交互",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = ShirokoWearTheme.colors.accentGold,
-                                modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+                                modifier = Modifier
+                                    .padding(start = 4.dp, top = 4.dp)
+                                    .semantics { heading() },
                             )
                         }
 
@@ -169,6 +200,11 @@ fun SettingsScreen(
                                 secondaryLabel = if (settings.hapticsEnabled) "按键与滚轮微震反馈" else "已静音",
                                 confirmEnableAudibly = true,
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                modifier = Modifier.semantics {
+                                    role = Role.Switch
+                                    stateDescription = AccessibilityPresentation.buildSettingsHapticsStateDescription(settings.hapticsEnabled)
+                                    contentDescription = "触觉震动"
+                                },
                             )
                         }
 
@@ -178,7 +214,9 @@ fun SettingsScreen(
                                 text = "其他",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = ShirokoWearTheme.colors.accentGold,
-                                modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+                                modifier = Modifier
+                                    .padding(start = 4.dp, top = 4.dp)
+                                    .semantics { heading() },
                             )
                         }
 
@@ -191,6 +229,9 @@ fun SettingsScreen(
                                     haptics.click()
                                     onNavigateToAbout()
                                 },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "关于 Cherish，版本 0.1.0，点击查看详情"
+                                },
                             )
                         }
 
@@ -201,6 +242,10 @@ fun SettingsScreen(
                                 onClick = {
                                     haptics.back()
                                     onBack()
+                                },
+                                modifier = Modifier.semantics {
+                                    role = Role.Button
+                                    contentDescription = "返回上一页"
                                 },
                             ) {
                                 Text(

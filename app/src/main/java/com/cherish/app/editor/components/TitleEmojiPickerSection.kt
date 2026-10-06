@@ -20,10 +20,18 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCardButton
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
@@ -58,7 +66,10 @@ fun TitleEmojiPickerSection(
         contentPadding = ShirokoWearTheme.dimens.screenPadding,
     ) {
         item(key = "title") {
-            ShirokoWearScreenTitle(text = "名称与图标")
+            ShirokoWearScreenTitle(
+                text = "名称与图标",
+                modifier = Modifier.semantics { heading() },
+            )
         }
 
         // Text input card
@@ -74,7 +85,9 @@ fun TitleEmojiPickerSection(
                     Text(
                         text = emoji,
                         fontSize = 24.sp,
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .clearAndSetSemantics { },
                     )
                     BasicTextField(
                         value = title,
@@ -86,7 +99,11 @@ fun TitleEmojiPickerSection(
                         ),
                         cursorBrush = SolidColor(ShirokoWearTheme.colors.accentGold),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                contentDescription = "事件名称输入框"
+                            },
                         decorationBox = { innerTextField ->
                             if (title.isEmpty()) {
                                 Text(
@@ -108,7 +125,9 @@ fun TitleEmojiPickerSection(
                 text = "快捷名称",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .semantics { heading() },
             )
         }
 
@@ -124,10 +143,17 @@ fun TitleEmojiPickerSection(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 for (preset in chunk) {
+                    val isSelected = title == preset
                     ShirokoWearSelectableButton(
-                        selected = title == preset,
+                        selected = isSelected,
                         onClick = { onTitleChange(preset) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics {
+                                role = Role.RadioButton
+                                selected = isSelected
+                                contentDescription = "${preset}${if (isSelected) "，已选中" else ""}"
+                            },
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                     ) {
                         Text(
@@ -146,7 +172,9 @@ fun TitleEmojiPickerSection(
                 text = "选择图标",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .semantics { heading() },
             )
         }
 
@@ -162,16 +190,25 @@ fun TitleEmojiPickerSection(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 for (item in chunk) {
+                    val isSelected = emoji == item
+                    val emojiLabel = AccessibilityPresentation.getEmojiAccessibilityName(item)
                     ShirokoWearSelectableButton(
-                        selected = emoji == item,
+                        selected = isSelected,
                         onClick = { onEmojiChange(item) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics {
+                                role = Role.RadioButton
+                                selected = isSelected
+                                contentDescription = "${emojiLabel}图标${if (isSelected) "，已选中" else ""}"
+                            },
                         contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
                     ) {
                         Text(
                             text = item,
                             fontSize = 18.sp,
                             textAlign = TextAlign.Center,
+                            modifier = Modifier.clearAndSetSemantics { },
                         )
                     }
                 }
@@ -181,7 +218,12 @@ fun TitleEmojiPickerSection(
         // Confirm button
         item(key = "confirm_btn") {
             Spacer(modifier = Modifier.height(4.dp))
-            ShirokoWearCardButton(onClick = onConfirm) {
+            ShirokoWearCardButton(
+                onClick = onConfirm,
+                modifier = Modifier.semantics {
+                    contentDescription = "确定名称与图标"
+                },
+            ) {
                 Text(
                     text = "确定",
                     style = MaterialTheme.typography.labelMedium,
