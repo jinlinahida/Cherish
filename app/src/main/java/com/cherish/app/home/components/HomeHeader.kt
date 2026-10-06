@@ -11,14 +11,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.wear.compose.material3.MaterialTheme
-import androidx.wear.compose.material3.Text
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.wear.compose.material3.MaterialTheme
+import androidx.wear.compose.material3.Text
 import com.cherish.app.home.model.HomeViewMode
 import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
@@ -28,10 +29,10 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 
 /**
- * Header section of the Cherish Home screen.
+ * Compact top header section of the Cherish Home screen.
  *
- * Displays the page title adapted to bezel shapes via [ShirokoWearScreenTitle],
- * along with a subtle view mode toggle (List / Grid) with haptic feedback.
+ * Designed to minimize vertical footprint on Wear OS circular displays,
+ * ensuring event countdown cards immediately occupy the screen center.
  */
 @Composable
 fun HomeHeader(
@@ -47,91 +48,95 @@ fun HomeHeader(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 4.dp, bottom = 4.dp),
+            .padding(top = 2.dp, bottom = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ShirokoWearScreenTitle(
             text = "Cherish",
-            marquee = true,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = ShirokoWearTheme.colors.accentGold,
             modifier = Modifier.semantics { heading() },
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            if (onAddEventClick != null) {
-                ShirokoWearCard(
-                    modifier = Modifier.semantics(mergeDescendants = true) {
-                        contentDescription = "添加事件"
-                        role = Role.Button
-                    },
-                    shape = ShirokoWearShapes.cardCompact,
-                    innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    outerPadding = PaddingValues(0.dp),
-                    fillMaxWidth = false,
-                    onClick = {
-                        haptics.click()
-                        onAddEventClick()
-                    },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "+ 添加",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ShirokoWearTheme.colors.accentGold,
-                    )
+        if (hasEvents || onAddEventClick != null) {
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (onAddEventClick != null) {
+                    ShirokoWearCard(
+                        modifier = Modifier.semantics(mergeDescendants = true) {
+                            contentDescription = "添加事件"
+                            role = Role.Button
+                        },
+                        shape = ShirokoWearShapes.cardCompact,
+                        innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        outerPadding = PaddingValues(0.dp),
+                        fillMaxWidth = false,
+                        onClick = {
+                            haptics.click()
+                            onAddEventClick()
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "+ 添加",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ShirokoWearTheme.colors.accentGold,
+                        )
+                    }
                 }
-            }
 
-            if (hasEvents) {
-                val modeDesc = AccessibilityPresentation.buildViewModeToggleDescription(viewMode)
-                ShirokoWearCard(
-                    modifier = Modifier.semantics(mergeDescendants = true) {
-                        contentDescription = modeDesc
-                        role = Role.Button
-                    },
-                    shape = ShirokoWearShapes.cardCompact,
-                    innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    outerPadding = PaddingValues(0.dp),
-                    fillMaxWidth = false,
-                    onClick = {
-                        haptics.click()
-                        onToggleViewMode()
-                    },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    val modeLabel = if (viewMode == HomeViewMode.LIST) "⊞ 网格" else "☰ 列表"
-                    Text(
-                        text = modeLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ShirokoWearTheme.colors.accentGold,
-                    )
+                if (hasEvents) {
+                    val modeDesc = AccessibilityPresentation.buildViewModeToggleDescription(viewMode)
+                    ShirokoWearCard(
+                        modifier = Modifier.semantics(mergeDescendants = true) {
+                            contentDescription = modeDesc
+                            role = Role.Button
+                        },
+                        shape = ShirokoWearShapes.cardCompact,
+                        innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        outerPadding = PaddingValues(0.dp),
+                        fillMaxWidth = false,
+                        onClick = {
+                            haptics.click()
+                            onToggleViewMode()
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val modeLabel = if (viewMode == HomeViewMode.LIST) "⊞ 网格" else "☰ 列表"
+                        Text(
+                            text = modeLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ShirokoWearTheme.colors.accentGold,
+                        )
+                    }
                 }
-            }
 
-            if (onSettingsClick != null) {
-                ShirokoWearCard(
-                    modifier = Modifier.semantics(mergeDescendants = true) {
-                        contentDescription = "设置"
-                        role = Role.Button
-                    },
-                    shape = ShirokoWearShapes.cardCompact,
-                    innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
-                    outerPadding = PaddingValues(0.dp),
-                    fillMaxWidth = false,
-                    onClick = {
-                        haptics.click()
-                        onSettingsClick()
-                    },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "⚙ 设置",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = ShirokoWearTheme.colors.accentGold,
-                    )
+                if (onSettingsClick != null) {
+                    ShirokoWearCard(
+                        modifier = Modifier.semantics(mergeDescendants = true) {
+                            contentDescription = "设置"
+                            role = Role.Button
+                        },
+                        shape = ShirokoWearShapes.cardCompact,
+                        innerPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        outerPadding = PaddingValues(0.dp),
+                        fillMaxWidth = false,
+                        onClick = {
+                            haptics.click()
+                            onSettingsClick()
+                        },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "⚙ 设置",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = ShirokoWearTheme.colors.accentGold,
+                        )
+                    }
                 }
             }
         }

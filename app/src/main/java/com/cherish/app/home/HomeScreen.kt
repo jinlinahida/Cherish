@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.lazy.AutoCenteringParams
 import androidx.wear.compose.foundation.lazy.items
 import com.cherish.app.date.model.SolarDate
 import com.cherish.app.event.model.CountdownEvent
@@ -79,6 +80,7 @@ fun HomeScreenContent(
             modifier = modifier.fillMaxSize(),
             itemSpacing = 6.dp,
             contentPadding = ShirokoWearTheme.dimens.screenPadding,
+            autoCentering = AutoCenteringParams(itemIndex = if (uiState.isEmpty) 0 else 1),
         ) {
             // Header
             item(key = "home_header") {
@@ -115,7 +117,7 @@ fun HomeScreenContent(
                 // Grid Mode: 2-column compact cards
                 items(
                     items = gridRows,
-                    key = { row -> "grid_row_${row.first().event.id}" },
+                    key = { row -> "grid_row_" + row.joinToString("_") { it.event.id } },
                 ) { rowItems ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),

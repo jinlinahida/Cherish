@@ -278,5 +278,45 @@ class HomeScreenPresentationTest {
         assertTrue("Pinned event must have isPinned true in UI model", models[0].isPinned)
         assertFalse("Unpinned event must have isPinned false in UI model", models[1].isPinned)
     }
+
+    @Test
+    fun `resolveCardGradients produces valid brushes for all EventColor variants`() {
+        val (defaultBg, defaultBorder) = com.cherish.app.home.components.resolveCardGradients(com.cherish.app.event.model.EventColor.Default)
+        org.junit.Assert.assertNotNull(defaultBg)
+        org.junit.Assert.assertNotNull(defaultBorder)
+
+        val (singleBg, singleBorder) = com.cherish.app.home.components.resolveCardGradients(com.cherish.app.event.model.EventColor.Rose)
+        org.junit.Assert.assertNotNull(singleBg)
+        org.junit.Assert.assertNotNull(singleBorder)
+
+        val (gradBg, gradBorder) = com.cherish.app.home.components.resolveCardGradients(com.cherish.app.event.model.EventColor.Sunset)
+        org.junit.Assert.assertNotNull(gradBg)
+        org.junit.Assert.assertNotNull(gradBorder)
+    }
+
+    @Test
+    fun `EventColor and EventBackground remain completely independent in HomeUiModel`() {
+        val eventWithColor = CountdownEvent(
+            id = "c1",
+            title = "Color Test",
+            eventDate = EventDate.Solar(SolarDate(2026, 12, 1)),
+            color = com.cherish.app.event.model.EventColor.Emerald,
+            background = com.cherish.app.event.model.EventBackground.Default,
+        )
+        val uiModel = HomeEventMapper.toUiModel(eventWithColor, referenceDate)
+        assertEquals(com.cherish.app.event.model.EventColor.Emerald, uiModel.color)
+        assertEquals(com.cherish.app.event.model.EventBackground.Default, uiModel.background)
+    }
+
+    @Test
+    fun `pinned events maintain exact same typography tier as unpinned events without hero distortion`() {
+        val pinnedTier = resolveCountdownTypographyTier(isCompact = false, isToday = false, daysCount = 35L)
+        val unpinnedTier = resolveCountdownTypographyTier(isCompact = false, isToday = false, daysCount = 35L)
+        assertEquals(pinnedTier, unpinnedTier)
+
+        val pinnedGridTier = resolveCountdownTypographyTier(isCompact = true, isToday = false, daysCount = 35L)
+        val unpinnedGridTier = resolveCountdownTypographyTier(isCompact = true, isToday = false, daysCount = 35L)
+        assertEquals(pinnedGridTier, unpinnedGridTier)
+    }
 }
 

@@ -63,6 +63,7 @@ object DemoEvents {
             eventDate = EventDate.Solar(SolarDate(2027, 1, 1)),
             repeatRule = RepeatRule.None,
             isPinned = false,
+            color = EventColor.Sunset,
         ),
         // 5. Lunar Spring Festival
         CountdownEvent(
@@ -73,6 +74,7 @@ object DemoEvents {
             eventDate = EventDate.Lunar(LunarDate(2027, 1, 1)),
             repeatRule = RepeatRule.Yearly,
             isPinned = false,
+            color = EventColor.Coral,
         ),
         // 6. Lunar leap month event
         CountdownEvent(

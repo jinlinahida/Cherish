@@ -1,6 +1,9 @@
 package com.cherish.app.home.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
@@ -29,25 +35,99 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
-import com.cherish.app.event.model.EventBackground
 import com.cherish.app.event.model.EventColor
 import com.cherish.app.home.model.CountdownDisplayStatus
 import com.cherish.app.home.model.CountdownTypographyTier
 import com.cherish.app.home.model.HomeEventUiModel
 import com.cherish.app.home.model.resolveCountdownTypographyTier
 import com.cherish.app.ui.AccessibilityPresentation
-import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
+import io.github.jinlinahida.shirokowear.ui.clickVfx
 
 /**
- * Core event presentation card built strictly upon ShirokoWearUI's [ShirokoWearCard].
+ * Resolves the subtle background gradient brush and matching border stroke brush
+ * based strictly on the event's [EventColor].
  *
- * Designed specifically for Wear OS small displays:
- * - Large countdown number acts as the primary focal point.
- * - Title and emoji provide context without overpowering the number.
- * - Supports both List (full-width) and Grid (compact half-width) presentation modes.
- * - Subtle animated highlight border when [HomeEventUiModel.isPinned] is true.
+ * Guarantees:
+ * - Subtle translucent gradient (15-25% start, 5-8% end) preserving dark OLED background.
+ * - Entire screen is NEVER tinted; only the individual card surface has its own identity.
+ * - Decoupled completely from Detail screen's EventBackground.
+ */
+internal fun resolveCardGradients(color: EventColor): Pair<Brush, Brush> {
+    return when (color) {
+        is EventColor.Single -> {
+            val base = Color(color.argb)
+            val bgBrush = Brush.linearGradient(
+                colors = listOf(
+                    base.copy(alpha = 0.22f),
+                    base.copy(alpha = 0.05f),
+                ),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+            val borderBrush = Brush.linearGradient(
+                colors = listOf(
+                    base.copy(alpha = 0.38f),
+                    base.copy(alpha = 0.12f),
+                ),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+            Pair(bgBrush, borderBrush)
+        }
+        is EventColor.Gradient -> {
+            val start = Color(color.startColor)
+            val end = Color(color.endColor)
+            val bgBrush = Brush.linearGradient(
+                colors = listOf(
+                    start.copy(alpha = 0.24f),
+                    end.copy(alpha = 0.07f),
+                ),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+            val borderBrush = Brush.linearGradient(
+                colors = listOf(
+                    start.copy(alpha = 0.38f),
+                    end.copy(alpha = 0.14f),
+                ),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+            Pair(bgBrush, borderBrush)
+        }
+        EventColor.Default -> {
+            val bgBrush = Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.08f),
+                    Color.White.copy(alpha = 0.02f),
+                ),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+            val borderBrush = Brush.linearGradient(
+                colors = listOf(
+                    Color.White.copy(alpha = 0.16f),
+                    Color.White.copy(alpha = 0.04f),
+                ),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+            Pair(bgBrush, borderBrush)
+        }
+    }
+}
+
+/**
+ * Core event presentation card for the Cherish Home screen.
+ *
+ * Design principles:
+ * - Huge countdown number is the primary focal center.
+ * - Title and emoji provide context (emoji default in front of title).
+ * - Pin only represents priority/ordering; it does not turn the card into a Hero or distort hierarchy.
+ * - Subtle translucent gradient derived from [HomeEventUiModel.color] gives each card its own visual identity.
+ * - Supports both List (full-width) and Grid (compact 2-column) presentation modes.
  */
 @Composable
 fun CountdownEventCard(
@@ -57,14 +137,8 @@ fun CountdownEventCard(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val highlightColor = when (val c = uiModel.color) {
-        is EventColor.Single -> Color(c.argb)
-        is EventColor.Gradient -> Color(c.startColor)
-        EventColor.Default -> when (val bg = uiModel.background) {
-            is EventBackground.Color -> Color(bg.argb)
-            is EventBackground.Gradient -> Color(bg.startColor)
-            else -> ShirokoWearTheme.colors.cardHighlight
-        }
+    val (bgGradient, borderBrush) = remember(uiModel.color) {
+        resolveCardGradients(uiModel.color)
     }
 
     val cardShape = if (isCompact) ShirokoWearShapes.cardCompact else ShirokoWearShapes.card
@@ -84,35 +158,56 @@ fun CountdownEventCard(
         }
     }
 
-    ShirokoWearCard(
-        modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = cardA11yDescription
-            role = Role.Button
-            if (onClick != null) {
-                onClick(label = "查看事件详情") {
-                    onClick()
-                    true
+    val clickable = onClick != null || onLongClick != null
+    val innerPadding = if (isCompact) {
+        PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+    } else {
+        PaddingValues(horizontal = 10.dp, vertical = 8.dp)
+    }
+    val outerPadding = if (isCompact) {
+        PaddingValues(2.dp)
+    } else {
+        PaddingValues(vertical = 3.dp)
+    }
+
+    Box(
+        modifier = modifier
+            .padding(outerPadding)
+            .then(
+                if (clickable) {
+                    Modifier.clickVfx(
+                        enabled = true,
+                        onClick = { onClick?.invoke() },
+                        onLongClick = { onLongClick?.invoke() },
+                    )
+                } else {
+                    Modifier
+                },
+            )
+            .clip(cardShape)
+            .border(
+                width = 1.dp,
+                shape = cardShape,
+                brush = borderBrush,
+            )
+            .background(color = ShirokoWearTheme.colors.cardBackground)
+            .background(brush = bgGradient)
+            .padding(innerPadding)
+            .then(if (isCompact) Modifier else Modifier.fillMaxWidth())
+            .semantics(mergeDescendants = true) {
+                contentDescription = cardA11yDescription
+                role = Role.Button
+                if (onClick != null) {
+                    onClick(label = "查看事件详情") {
+                        onClick()
+                        true
+                    }
                 }
-            }
-            if (customActions.isNotEmpty()) {
-                this.customActions = customActions
-            }
-        },
-        shape = cardShape,
-        highlighted = uiModel.isPinned,
-        highlightColor = highlightColor,
-        onClick = onClick,
-        onLongClick = onLongClick,
-        innerPadding = if (isCompact) {
-            PaddingValues(horizontal = 6.dp, vertical = 6.dp)
-        } else {
-            PaddingValues(horizontal = 10.dp, vertical = 8.dp)
-        },
-        outerPadding = if (isCompact) {
-            PaddingValues(2.dp)
-        } else {
-            PaddingValues(vertical = 3.dp)
-        },
+                if (customActions.isNotEmpty()) {
+                    this.customActions = customActions
+                }
+            },
+        contentAlignment = Alignment.Center,
     ) {
         if (isCompact) {
             CompactCardContent(uiModel)
@@ -137,7 +232,7 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        // Title Row
+        // Title Row: Emoji + Title + Pin Indicator
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -147,15 +242,18 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
                 modifier = Modifier.weight(1f, fill = false),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = uiModel.event.emoji,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.clearAndSetSemantics { },
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+                if (uiModel.event.emoji.isNotBlank()) {
+                    Text(
+                        text = uiModel.event.emoji,
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.clearAndSetSemantics { },
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
                 Text(
                     text = uiModel.event.title,
                     style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
                     color = ShirokoWearTheme.colors.contentPrimary,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -181,7 +279,7 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
             daysCount = uiModel.daysCount,
         )
 
-        // Large Number + Unit
+        // Large Countdown Number + Unit
         if (isToday) {
             Text(
                 text = "TODAY",
@@ -197,17 +295,11 @@ private fun StandardCardContent(uiModel: HomeEventUiModel) {
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.Center,
             ) {
-                val numberColor = if (uiModel.isPinned) {
-                    ShirokoWearTheme.colors.cardHighlight
-                } else {
-                    ShirokoWearTheme.colors.contentPrimary
-                }
-
                 Text(
                     text = "${uiModel.daysCount}",
                     style = typographyTier.toTextStyle(),
                     fontWeight = FontWeight.Black,
-                    color = numberColor,
+                    color = ShirokoWearTheme.colors.contentPrimary,
                     maxLines = 1,
                     softWrap = false,
                 )
@@ -243,21 +335,24 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
-        // Compact Title Row with optional Pin indicator
+        // Compact Title Row: Emoji + Title + Pin Indicator
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = uiModel.event.emoji,
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.clearAndSetSemantics { },
-            )
-            Spacer(modifier = Modifier.width(2.dp))
+            if (uiModel.event.emoji.isNotBlank()) {
+                Text(
+                    text = uiModel.event.emoji,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.clearAndSetSemantics { },
+                )
+                Spacer(modifier = Modifier.width(2.dp))
+            }
             Text(
                 text = uiModel.event.title,
                 style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
                 color = ShirokoWearTheme.colors.contentPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -280,7 +375,7 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
             daysCount = uiModel.daysCount,
         )
 
-        // Compact Number
+        // Compact Number + Unit
         if (isToday) {
             Text(
                 text = "TODAY",
@@ -291,16 +386,11 @@ private fun CompactCardContent(uiModel: HomeEventUiModel) {
                 softWrap = false,
             )
         } else {
-            val numberColor = if (uiModel.isPinned) {
-                ShirokoWearTheme.colors.cardHighlight
-            } else {
-                ShirokoWearTheme.colors.contentPrimary
-            }
             Text(
                 text = "${uiModel.daysCount}",
                 style = typographyTier.toTextStyle(),
                 fontWeight = FontWeight.Bold,
-                color = numberColor,
+                color = ShirokoWearTheme.colors.contentPrimary,
                 maxLines = 1,
                 softWrap = false,
             )
