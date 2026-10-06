@@ -225,6 +225,7 @@ fun CherishApp(
 
                 com.cherish.app.editor.EventEditorScreen(
                     initialState = editorState,
+                    imageStorage = imageStorage,
                     onSave = { savedState ->
                         val result = com.cherish.app.editor.sanitizer.DatePickerSanitizer.validateAndBuildEvent(savedState, calendar)
                         if (result.isSuccess) {

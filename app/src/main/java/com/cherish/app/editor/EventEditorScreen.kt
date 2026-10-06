@@ -1,25 +1,46 @@
 package com.cherish.app.editor
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -31,13 +52,18 @@ import com.cherish.app.date.model.RepeatUnit
 import com.cherish.app.date.model.SolarDate
 import com.cherish.app.editor.components.BackgroundPickerSection
 import com.cherish.app.editor.components.CategoryPickerSection
+import com.cherish.app.editor.components.ColorPickerSection
 import com.cherish.app.editor.components.DatePickerSection
+import com.cherish.app.editor.components.NotesPickerSection
 import com.cherish.app.editor.components.RepeatPickerSection
 import com.cherish.app.editor.components.TitleEmojiPickerSection
 import com.cherish.app.editor.model.EventEditorState
 import com.cherish.app.editor.sanitizer.DatePickerSanitizer
 import com.cherish.app.event.model.EventBackground
 import com.cherish.app.event.model.EventCategory
+import com.cherish.app.event.model.EventColor
+import com.cherish.app.storage.EventImageStorage
+import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearAmbient
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearButtonDefaults
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearCard
@@ -46,35 +72,31 @@ import io.github.jinlinahida.shirokowear.ui.ShirokoWearContentScale
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScalingRotaryColumn
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearScreenTitle
-import io.github.jinlinahida.shirokowear.ui.ShirokoWearSettingsItem
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearShapes
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearToggleCard
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
-import com.cherish.app.ui.AccessibilityPresentation
 import io.github.jinlinahida.shirokowear.ui.UnstableShirokoWearApi
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
-
-import androidx.activity.compose.BackHandler
 
 enum class EditorSubScreen {
     MAIN,
     TITLE_EMOJI,
     DATE,
     REPEAT,
-    CATEGORY,
+    COLOR,
     BACKGROUND,
+    CATEGORY,
+    NOTES,
 }
 
 /**
  * Unified Event Editor Screen for Cherish.
  *
- * Supports both creating a new event and editing an existing one.
+ * Product design principles:
+ * - Clear Wear OS hierarchy: Live Hero preview card -> Schedule -> Visual Styling -> Preferences.
+ * - Decoupled styling: Event Color (Home card subtle gradient) vs Event Background (Detail fullscreen background).
+ * - Full support for custom intervals, solar/lunar dates, custom image backgrounds, and priority pinning.
+ * - Replaces mechanical SettingsItem stacking with an intuitive wearable layout.
  */
 @OptIn(UnstableShirokoWearApi::class)
 @Composable
@@ -83,6 +105,7 @@ fun EventEditorScreen(
     onSave: (EventEditorState) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
+    imageStorage: EventImageStorage? = null,
 ) {
     var state by remember { mutableStateOf(initialState) }
     var activeSubScreen by remember { mutableStateOf(EditorSubScreen.MAIN) }
@@ -137,23 +160,15 @@ fun EventEditorScreen(
                             }
                         }
 
-                        // Name & Emoji Entry
-                        item(key = "entry_name") {
-                            val displaySubtitle = if (state.title.isBlank()) {
-                                "点击输入名称"
-                            } else {
-                                "${state.emoji} ${state.title}"
-                            }
-                            ShirokoWearSettingsItem(
-                                title = "事件名称",
-                                subtitle = displaySubtitle,
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
-                                        fieldName = "事件名称",
-                                        currentValue = if (state.title.isBlank()) "未设置" else state.title,
-                                        actionHint = "点击修改名称与图标",
-                                    )
-                                },
+                        // 1. Hero Event Preview Card (Interactive)
+                        item(key = "hero_preview_card") {
+                            EditorHeroCard(
+                                title = state.title,
+                                emoji = state.emoji,
+                                color = state.color,
+                                isLunar = state.isLunar,
+                                solarDate = state.solarDate,
+                                lunarDate = state.lunarDate,
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.TITLE_EMOJI
@@ -161,9 +176,14 @@ fun EventEditorScreen(
                             )
                         }
 
-                        // Date Entry
+                        // Section 1: 时间与周期 (Schedule & Recurrence)
+                        item(key = "section_schedule_label") {
+                            EditorSectionHeader(text = "目标日期与周期")
+                        }
+
+                        // Date Card
                         item(key = "entry_date") {
-                            val dateSubtitle = if (state.isLunar) {
+                            val dateLabel = if (state.isLunar) {
                                 val leapStr = if (state.lunarDate.isLeapMonth) "闰" else ""
                                 "农历 %04d年%s%02d月%02d日".format(
                                     state.lunarDate.year,
@@ -172,22 +192,17 @@ fun EventEditorScreen(
                                     state.lunarDate.day,
                                 )
                             } else {
-                                "公历 %04d.%02d.%02d".format(
+                                "公历 %04d年%02d月%02d日".format(
                                     state.solarDate.year,
                                     state.solarDate.month,
                                     state.solarDate.day,
                                 )
                             }
-                            ShirokoWearSettingsItem(
+                            EditorActionCard(
+                                icon = if (state.isLunar) "🌙" else "📅",
                                 title = "目标日期",
-                                subtitle = dateSubtitle,
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
-                                        fieldName = "目标日期",
-                                        currentValue = dateSubtitle,
-                                        actionHint = "点击修改目标日期",
-                                    )
-                                },
+                                value = dateLabel,
+                                actionHint = "点击修改日期与公农历",
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.DATE
@@ -195,19 +210,14 @@ fun EventEditorScreen(
                             )
                         }
 
-                        // Repeat Rule Entry
+                        // Repeat Rule Card
                         item(key = "entry_repeat") {
-                            val repeatSubtitle = formatRepeatRule(state.repeatRule)
-                            ShirokoWearSettingsItem(
+                            val repeatLabel = formatRepeatRule(state.repeatRule)
+                            EditorActionCard(
+                                icon = "🔁",
                                 title = "重复规则",
-                                subtitle = repeatSubtitle,
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
-                                        fieldName = "重复规则",
-                                        currentValue = repeatSubtitle,
-                                        actionHint = "点击修改重复规则",
-                                    )
-                                },
+                                value = repeatLabel,
+                                actionHint = "点击修改重复周期",
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.REPEAT
@@ -215,40 +225,34 @@ fun EventEditorScreen(
                             )
                         }
 
-                        // Category Entry
-                        item(key = "entry_category") {
-                            val categorySubtitle = formatCategory(state.category)
-                            val categorySpeech = AccessibilityPresentation.getCategoryAccessibilityName(state.category)
-                            ShirokoWearSettingsItem(
-                                title = "事件分类",
-                                subtitle = categorySubtitle,
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
-                                        fieldName = "事件分类",
-                                        currentValue = categorySpeech,
-                                        actionHint = "点击修改分类",
-                                    )
-                                },
+                        // Section 2: 视觉风格 (Visual Appearance)
+                        item(key = "section_style_label") {
+                            EditorSectionHeader(text = "视觉风格")
+                        }
+
+                        // Home Card Color (Event Color)
+                        item(key = "entry_card_color") {
+                            val colorName = formatColorName(state.color)
+                            EditorActionCard(
+                                icon = "🎨",
+                                title = "首页卡片颜色",
+                                value = colorName,
+                                actionHint = "用于首页卡片的淡淡渐变色",
                                 onClick = {
                                     haptics.click()
-                                    activeSubScreen = EditorSubScreen.CATEGORY
+                                    activeSubScreen = EditorSubScreen.COLOR
                                 },
                             )
                         }
 
-                        // Background Entry
-                        item(key = "entry_bg") {
-                            val bgSubtitle = formatBackground(state.background)
-                            ShirokoWearSettingsItem(
-                                title = "背景风格",
-                                subtitle = bgSubtitle,
-                                modifier = Modifier.semantics(mergeDescendants = true) {
-                                    contentDescription = AccessibilityPresentation.buildEditorFieldAccessibilityDescription(
-                                        fieldName = "背景风格",
-                                        currentValue = bgSubtitle,
-                                        actionHint = "点击修改背景风格",
-                                    )
-                                },
+                        // Detail Screen Background (Event Background)
+                        item(key = "entry_detail_bg") {
+                            val bgName = formatBackgroundName(state.background)
+                            EditorActionCard(
+                                icon = "🖼️",
+                                title = "详情页背景",
+                                value = bgName,
+                                actionHint = "用于进入详情后的全屏背景",
                                 onClick = {
                                     haptics.click()
                                     activeSubScreen = EditorSubScreen.BACKGROUND
@@ -256,19 +260,53 @@ fun EventEditorScreen(
                             )
                         }
 
-                        // Pinned Toggle Card
+                        // Section 3: 分类与排序 (Organization & Preferences)
+                        item(key = "section_options_label") {
+                            EditorSectionHeader(text = "分类与排序")
+                        }
+
+                        // Category Card
+                        item(key = "entry_category") {
+                            val categoryName = formatCategory(state.category)
+                            EditorActionCard(
+                                icon = "🏷️",
+                                title = "事件分类",
+                                value = categoryName,
+                                actionHint = "点击修改分类",
+                                onClick = {
+                                    haptics.click()
+                                    activeSubScreen = EditorSubScreen.CATEGORY
+                                },
+                            )
+                        }
+
+                        // Pin Toggle Card
                         item(key = "entry_pinned") {
                             ShirokoWearToggleCard(
                                 checked = state.isPinned,
                                 onCheckedChange = { checked ->
                                     state = state.copy(isPinned = checked)
                                 },
-                                label = "置顶显示",
-                                secondaryLabel = if (state.isPinned) "已置顶于首页顶部" else "普通排序",
+                                label = "首页置顶",
+                                secondaryLabel = if (state.isPinned) "在首页最优先排在最前列" else "普通排序",
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                                 modifier = Modifier.semantics {
                                     role = Role.Switch
                                     stateDescription = if (state.isPinned) "开启，已置顶于首页顶部" else "关闭，普通排序"
+                                },
+                            )
+                        }
+
+                        // Notes Card
+                        item(key = "entry_notes") {
+                            EditorActionCard(
+                                icon = "📝",
+                                title = "备注说明",
+                                value = if (state.notes.isNotBlank()) state.notes else "未设置备注 (选填)",
+                                actionHint = "点击修改备注内容",
+                                onClick = {
+                                    haptics.click()
+                                    activeSubScreen = EditorSubScreen.NOTES
                                 },
                             )
                         }
@@ -355,10 +393,10 @@ fun EventEditorScreen(
                     )
                 }
 
-                EditorSubScreen.CATEGORY -> {
-                    CategoryPickerSection(
-                        currentCategory = state.category,
-                        onCategoryChange = { cat -> state = state.copy(category = cat) },
+                EditorSubScreen.COLOR -> {
+                    ColorPickerSection(
+                        currentColor = state.color,
+                        onColorChange = { color -> state = state.copy(color = color) },
                         onConfirm = { activeSubScreen = EditorSubScreen.MAIN },
                     )
                 }
@@ -368,8 +406,203 @@ fun EventEditorScreen(
                         currentBackground = state.background,
                         onBackgroundChange = { bg -> state = state.copy(background = bg) },
                         onConfirm = { activeSubScreen = EditorSubScreen.MAIN },
+                        imageStorage = imageStorage,
+                        eventId = state.eventId,
                     )
                 }
+
+                EditorSubScreen.CATEGORY -> {
+                    CategoryPickerSection(
+                        currentCategory = state.category,
+                        onCategoryChange = { cat -> state = state.copy(category = cat) },
+                        onConfirm = { activeSubScreen = EditorSubScreen.MAIN },
+                    )
+                }
+
+                EditorSubScreen.NOTES -> {
+                    NotesPickerSection(
+                        notes = state.notes,
+                        onNotesChange = { state = state.copy(notes = it) },
+                        onConfirm = { activeSubScreen = EditorSubScreen.MAIN },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Interactive Hero Card displaying live preview of the event's appearance.
+ */
+@Composable
+private fun EditorHeroCard(
+    title: String,
+    emoji: String,
+    color: EventColor,
+    isLunar: Boolean,
+    solarDate: SolarDate,
+    lunarDate: LunarDate,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val backgroundBrush = when (color) {
+        EventColor.Default -> Brush.radialGradient(
+            colors = listOf(Color(0xFF262C38), Color(0xFF14171E)),
+        )
+        is EventColor.Single -> {
+            val c = Color(color.argb)
+            Brush.linearGradient(
+                colors = listOf(c.copy(alpha = 0.35f), Color(0xFF12151B)),
+            )
+        }
+        is EventColor.Gradient -> {
+            val start = Color(color.startColor)
+            val end = Color(color.endColor)
+            Brush.linearGradient(
+                colors = listOf(start.copy(alpha = 0.35f), end.copy(alpha = 0.15f)),
+                start = Offset.Zero,
+                end = Offset.Infinite,
+            )
+        }
+    }
+
+    val displayTitle = if (title.isBlank()) "点击输入事件名称..." else title
+    val dateSummary = if (isLunar) {
+        val leapStr = if (lunarDate.isLeapMonth) "闰" else ""
+        "农历 %04d.%s%02d.%02d".format(lunarDate.year, leapStr, lunarDate.month, lunarDate.day)
+    } else {
+        "公历 %04d.%02d.%02d".format(solarDate.year, solarDate.month, solarDate.day)
+    }
+
+    ShirokoWearCard(
+        shape = ShirokoWearShapes.card,
+        highlighted = true,
+        highlightColor = ShirokoWearTheme.colors.accentGold,
+        innerPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = "事件预览与名称：$emoji $title，点击修改"
+            },
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(backgroundBrush, ShirokoWearShapes.card),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Large Emoji Badge
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(Color.Black.copy(alpha = 0.35f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = emoji,
+                        fontSize = 20.sp,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+
+                // Title & Subtitle Info
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = displayTitle,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (title.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else Color.White,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = "$dateSummary • 点击编辑 ✏️",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        color = ShirokoWearTheme.colors.accentGold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EditorSectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+        color = ShirokoWearTheme.colors.accentGold,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp, start = 4.dp)
+            .semantics { heading() },
+    )
+}
+
+@Composable
+private fun EditorActionCard(
+    icon: String,
+    title: String,
+    value: String,
+    actionHint: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ShirokoWearCard(
+        shape = ShirokoWearShapes.cardCompact,
+        innerPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+        onClick = onClick,
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                contentDescription = "$title：$value，$actionHint"
+            },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = icon,
+                fontSize = 16.sp,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
     }
@@ -398,12 +631,27 @@ private fun formatCategory(category: EventCategory): String = when (category) {
     EventCategory.OTHER -> "📝 其他"
 }
 
-private fun formatBackground(bg: EventBackground): String = when (bg) {
-    EventBackground.Default -> "默认 (墨色微光)"
-    is EventBackground.Color -> "经典配色"
+private fun formatColorName(color: EventColor): String = when (color) {
+    EventColor.Default -> "默认 (墨黑)"
+    EventColor.Rose -> "玫瑰粉"
+    EventColor.Amber -> "琥珀金"
+    EventColor.Emerald -> "翡翠绿"
+    EventColor.Ocean -> "深海蓝"
+    EventColor.Violet -> "紫罗兰"
+    EventColor.Coral -> "珊瑚橙"
+    EventColor.Sunset -> "落日渐变"
+    EventColor.Aurora -> "极光渐变"
+    EventColor.Lavender -> "薰衣草渐变"
+    is EventColor.Single -> "自定义单色"
+    is EventColor.Gradient -> "自定义渐变"
+}
+
+private fun formatBackgroundName(bg: EventBackground): String = when (bg) {
+    EventBackground.Default -> "默认微光"
+    is EventBackground.Color -> "纯色微光"
     is EventBackground.Gradient -> "渐变微光"
     is EventBackground.Pattern -> "纹理风格"
-    is EventBackground.Image -> "自定义图片"
+    is EventBackground.Image -> "自定义图片 🖼️"
 }
 
 @Preview(device = "id:wearos_small_round", showSystemUi = true)
@@ -432,6 +680,7 @@ private fun EventEditorScreenRoundLargePreview() {
         title = "这是一个超长标题用来验证编辑页小圆屏大字体排版表现",
         emoji = "🎂",
         isPinned = true,
+        color = EventColor.Amber,
     )
     ShirokoWearTheme(
         contentScale = ShirokoWearContentScale.LARGE,
@@ -454,6 +703,7 @@ private fun EventEditorScreenSquareStandardPreview() {
     ).copy(
         title = "方屏标准排版",
         emoji = "✨",
+        color = EventColor.Sunset,
     )
     ShirokoWearTheme(
         contentScale = ShirokoWearContentScale.STANDARD,
@@ -466,27 +716,3 @@ private fun EventEditorScreenSquareStandardPreview() {
         )
     }
 }
-
-@Preview(device = "id:wearos_rect", showSystemUi = true)
-@Composable
-private fun EventEditorScreenSquareLargePreview() {
-    val sampleState = EventEditorState.createDefault(
-        today = SolarDate(2026, 10, 5),
-        initialLunar = LunarDate(2026, 8, 25),
-    ).copy(
-        title = "方屏大字阶排版测试",
-        emoji = "🎯",
-        isPinned = true,
-    )
-    ShirokoWearTheme(
-        contentScale = ShirokoWearContentScale.LARGE,
-        screenShape = ShirokoWearScreenShape.SQUARE,
-    ) {
-        EventEditorScreen(
-            initialState = sampleState,
-            onSave = {},
-            onCancel = {},
-        )
-    }
-}
-
