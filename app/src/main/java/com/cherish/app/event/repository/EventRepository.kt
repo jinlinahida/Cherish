@@ -67,6 +67,15 @@ interface EventRepository {
     fun reorder(fromIndex: Int, toIndex: Int)
 
     /**
+     * Updates the full order of events in the repository.
+     * Persists to storage before updating in-memory state.
+     *
+     * @throws IllegalArgumentException if the provided list does not contain the exact same set of events.
+     * @throws com.cherish.app.storage.EventStorageException if persistence fails.
+     */
+    fun reorderAll(orderedEvents: List<CountdownEvent>)
+
+    /**
      * Reloads events from the underlying storage.
      */
     fun reload()

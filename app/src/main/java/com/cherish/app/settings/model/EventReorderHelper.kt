@@ -45,12 +45,58 @@ object EventReorderHelper {
     }
 
     /**
-     * Checks if moving an item from [fromIndex] to [toIndex] maintains all event properties,
-     * specifically ensuring [CountdownEvent.isPinned] and IDs are preserved.
+     * Reorders an item with Pin consistency guarantee.
+     *
+     * In Cherish, pinned events represent top-priority events on the Home screen.
+     * When an event is reordered across the pinned boundary:
+     * - Moving an unpinned event above any pinned event promotes it to pinned (`isPinned = true`).
+     * - Moving a pinned event below any unpinned event demotes it to unpinned (`isPinned = false`).
+     * - Moving within the pinned group or within the unpinned group preserves the event's pin state.
+     *
+     * This guarantees that the order displayed in EventOrderScreen and the order displayed
+     * on HomeScreen are always 100% synchronized and consistent.
+     */
+    fun reorderWithPinConsistency(
+        list: List<CountdownEvent>,
+        fromIndex: Int,
+        toIndex: Int,
+    ): List<CountdownEvent> {
+        if (list.size <= 1) return list
+        if (fromIndex !in list.indices || toIndex !in list.indices) return list
+        if (fromIndex == toIndex) return list
+
+        val moved = reorder(list, fromIndex, toIndex)
+        val targetItem = moved[toIndex]
+
+        val hasPinnedAfter = (toIndex + 1 until moved.size).any { moved[it].isPinned }
+        val hasUnpinnedBefore = (0 until toIndex).any { !moved[it].isPinned }
+
+        val newPinnedStatus = when {
+            hasPinnedAfter -> true
+            hasUnpinnedBefore -> false
+            else -> targetItem.isPinned
+        }
+
+        if (newPinnedStatus == targetItem.isPinned) {
+            return moved
+        }
+
+        val updated = moved.toMutableList()
+        updated[toIndex] = targetItem.copy(isPinned = newPinnedStatus)
+        return updated.toList()
+    }
+
+    /**
+     * Checks if moving items from [original] to [reordered] maintains all event properties,
+     * ensuring IDs, dates, titles, and categories are strictly preserved.
+     *
+     * If [allowPinChange] is true, pin state transitions caused by crossing the pinned
+     * boundary are permitted.
      */
     fun validateReorderIntegrity(
         original: List<CountdownEvent>,
         reordered: List<CountdownEvent>,
+        allowPinChange: Boolean = false,
     ): Boolean {
         if (original.size != reordered.size) return false
         val originalIds = original.map { it.id }.toSet()
@@ -60,10 +106,10 @@ object EventReorderHelper {
         val originalMap = original.associateBy { it.id }
         return reordered.all { event ->
             val orig = originalMap[event.id] ?: return false
-            orig.isPinned == event.isPinned &&
-                orig.title == event.title &&
+            orig.title == event.title &&
                 orig.category == event.category &&
-                orig.eventDate == event.eventDate
+                orig.eventDate == event.eventDate &&
+                (allowPinChange || orig.isPinned == event.isPinned)
         }
     }
 }

@@ -54,6 +54,12 @@ class HomeViewModelTest {
             _events.value = list.toList()
         }
 
+        override fun reorderAll(orderedEvents: List<CountdownEvent>) {
+            list.clear()
+            list.addAll(orderedEvents)
+            _events.value = list.toList()
+        }
+
         override fun reload() {
             _events.value = list.toList()
         }

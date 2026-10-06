@@ -1,7 +1,6 @@
 package com.cherish.app.settings.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -58,11 +59,12 @@ import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
  * Screen allowing users to naturally reorder events via drag-and-drop gestures on Wear OS.
  *
  * Supported interactions:
- * - Instant drag by grabbing the right-hand grip handle.
- * - Long-press drag anywhere on the event card.
- * - Rotary crown scrolling when not dragging.
+ * - Ergonomic long-press drag on any card with stable pointer input (does not reset across index swaps).
+ * - Full-width touch area across circular screen edges with generous 44dp handle hit targets.
+ * - Rotary crown scrolling active when idle, automatically isolated during active drags.
  * - Haptic feedback: impact on pickup, crisp graduation ticks on item swap, click on drop.
- * - TalkBack accessibility: Custom accessibility actions ("向上移动", "向下移动") on each card.
+ * - Pin-consistency guarantee: synchronized with Home presentation order and persistent atomic storage.
+ * - TalkBack accessibility: Custom accessibility actions ("向上移动", "向下移动", "移至顶部", "移至末尾").
  */
 @Composable
 fun EventOrderScreen(
@@ -70,6 +72,7 @@ fun EventOrderScreen(
     onReorder: (fromIndex: Int, toIndex: Int) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onReorderComplete: ((List<CountdownEvent>) -> Unit)? = null,
 ) {
     val haptics = rememberShirokoWearHaptics()
     var localEvents by remember(events) { mutableStateOf(events) }
@@ -77,6 +80,10 @@ fun EventOrderScreen(
     var draggedEventId by remember { mutableStateOf<String?>(null) }
     var dragOffsetY by remember { mutableFloatStateOf(0f) }
     var itemHeightPx by remember { mutableFloatStateOf(0f) }
+
+    val density = LocalDensity.current
+    val itemSpacingPx = with(density) { 6.dp.toPx() }
+    val defaultItemHeightPx = with(density) { 64.dp.toPx() }
 
     val startDrag: (String) -> Unit = { eventId ->
         haptics.impact(multiple = false)
@@ -90,7 +97,7 @@ fun EventOrderScreen(
             dragOffsetY += deltaY
             val currentIndex = localEvents.indexOfFirst { it.id == activeId }
             if (currentIndex != -1) {
-                val effectiveHeight = if (itemHeightPx > 0f) itemHeightPx else 140f
+                val effectiveHeight = if (itemHeightPx > 0f) itemHeightPx else defaultItemHeightPx
                 val targetIndex = EventReorderHelper.calculateTargetIndex(
                     startIndex = currentIndex,
                     dragOffsetY = dragOffsetY,
@@ -98,7 +105,7 @@ fun EventOrderScreen(
                     totalItems = localEvents.size,
                 )
                 if (targetIndex != currentIndex) {
-                    localEvents = EventReorderHelper.reorder(localEvents, currentIndex, targetIndex)
+                    localEvents = EventReorderHelper.reorderWithPinConsistency(localEvents, currentIndex, targetIndex)
                     dragOffsetY -= (targetIndex - currentIndex) * effectiveHeight
                     haptics.tick()
                 }
@@ -112,8 +119,12 @@ fun EventOrderScreen(
             haptics.click()
             val originalIndex = events.indexOfFirst { it.id == activeId }
             val finalIndex = localEvents.indexOfFirst { it.id == activeId }
-            if (originalIndex != -1 && finalIndex != -1 && originalIndex != finalIndex) {
-                onReorder(originalIndex, finalIndex)
+            if (originalIndex != -1 && finalIndex != -1 && (originalIndex != finalIndex || localEvents != events)) {
+                if (onReorderComplete != null) {
+                    onReorderComplete(localEvents)
+                } else {
+                    onReorder(originalIndex, finalIndex)
+                }
             }
         }
         draggedEventId = null
@@ -131,6 +142,7 @@ fun EventOrderScreen(
             modifier = modifier.fillMaxSize(),
             itemSpacing = 6.dp,
             contentPadding = ShirokoWearTheme.dimens.screenPadding,
+            rotaryEnabled = draggedEventId == null,
         ) {
             item(key = "title") {
                 ShirokoWearScreenTitle(
@@ -162,14 +174,19 @@ fun EventOrderScreen(
                         totalCount = localEvents.size,
                         isDragging = isDragging,
                         dragOffsetY = if (isDragging) dragOffsetY else 0f,
+                        itemSpacingPx = itemSpacingPx,
                         onStartDrag = { startDrag(event.id) },
                         onDragDelta = updateDrag,
                         onEndDrag = endDrag,
                         onCancelDrag = cancelDrag,
                         onReorderStep = { fromIdx, toIdx ->
                             haptics.tick()
-                            localEvents = EventReorderHelper.reorder(localEvents, fromIdx, toIdx)
-                            onReorder(fromIdx, toIdx)
+                            localEvents = EventReorderHelper.reorderWithPinConsistency(localEvents, fromIdx, toIdx)
+                            if (onReorderComplete != null) {
+                                onReorderComplete(localEvents)
+                            } else {
+                                onReorder(fromIdx, toIdx)
+                            }
                         },
                         onMeasuredHeight = { heightPx ->
                             if (itemHeightPx == 0f) {
@@ -199,6 +216,7 @@ fun EventOrderScreen(
                         color = ShirokoWearTheme.colors.accentGold,
                     )
                 }
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }
@@ -211,6 +229,7 @@ private fun EventOrderItemCard(
     totalCount: Int,
     isDragging: Boolean,
     dragOffsetY: Float,
+    itemSpacingPx: Float,
     onStartDrag: () -> Unit,
     onDragDelta: (Float) -> Unit,
     onEndDrag: () -> Unit,
@@ -219,6 +238,11 @@ private fun EventOrderItemCard(
     onMeasuredHeight: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val currentOnStartDrag by rememberUpdatedState(onStartDrag)
+    val currentOnDragDelta by rememberUpdatedState(onDragDelta)
+    val currentOnEndDrag by rememberUpdatedState(onEndDrag)
+    val currentOnCancelDrag by rememberUpdatedState(onCancelDrag)
+
     val itemStateDescription = AccessibilityPresentation.buildEventOrderItemStateDescription(index, totalCount)
     val itemContentDescription = "${event.title}${if (event.isPinned) "，已置顶" else ""}"
 
@@ -274,7 +298,7 @@ private fun EventOrderItemCard(
             }
         }
         .onSizeChanged { size ->
-            onMeasuredHeight(size.height.toFloat() + 16f)
+            onMeasuredHeight(size.height.toFloat() + itemSpacingPx)
         }
         .semantics(mergeDescendants = true) {
             role = Role.Button
@@ -282,14 +306,14 @@ private fun EventOrderItemCard(
             stateDescription = itemStateDescription
             this.customActions = customActions
         }
-        .pointerInput(event.id, index) {
+        .pointerInput(event.id) {
             detectDragGesturesAfterLongPress(
-                onDragStart = { onStartDrag() },
-                onDragEnd = { onEndDrag() },
-                onDragCancel = { onCancelDrag() },
+                onDragStart = { currentOnStartDrag() },
+                onDragEnd = { currentOnEndDrag() },
+                onDragCancel = { currentOnCancelDrag() },
                 onDrag = { change, dragAmount ->
                     change.consume()
-                    onDragDelta(dragAmount.y)
+                    currentOnDragDelta(dragAmount.y)
                 }
             )
         }
@@ -349,23 +373,12 @@ private fun EventOrderItemCard(
 
             Spacer(modifier = Modifier.width(8.dp))
 
-            // Precision drag grip handle (instant touch drag)
+            // Ergonomic drag grip handle affordance
             ReorderGripHandle(
                 isDragging = isDragging,
                 modifier = Modifier
-                    .size(width = 36.dp, height = 36.dp)
+                    .size(width = 44.dp, height = 40.dp)
                     .clearAndSetSemantics { }
-                    .pointerInput(event.id, index) {
-                        detectDragGestures(
-                            onDragStart = { onStartDrag() },
-                            onDragEnd = { onEndDrag() },
-                            onDragCancel = { onCancelDrag() },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                onDragDelta(dragAmount.y)
-                            }
-                        )
-                    }
             )
         }
     }

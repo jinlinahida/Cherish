@@ -1,6 +1,7 @@
 package com.cherish.app.event.repository
 
 import com.cherish.app.event.model.CountdownEvent
+import com.cherish.app.settings.model.EventReorderHelper
 import com.cherish.app.storage.EventStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -91,5 +92,14 @@ class DefaultEventRepository(
 
         storage.save(newList)
         _events.value = newList
+    }
+
+    override fun reorderAll(orderedEvents: List<CountdownEvent>) = synchronized(lock) {
+        val current = _events.value
+        require(EventReorderHelper.validateReorderIntegrity(current, orderedEvents, allowPinChange = true)) {
+            "reorderAll must contain the exact same set of events as current repository state"
+        }
+        storage.save(orderedEvents)
+        _events.value = orderedEvents
     }
 }

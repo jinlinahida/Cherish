@@ -141,4 +141,148 @@ class EventReorderHelperTest {
         val reloadedAfterSecondMove = reloadedStorage.load()
         assertEquals(listOf("D", "A", "C", "B"), reloadedAfterSecondMove.map { it.id })
     }
+
+    @Test
+    fun `reorderWithPinConsistency moving pinned item within pinned group preserves isPinned true`() {
+        val p1 = createSampleEvent("P1", "Pinned 1", isPinned = true)
+        val p2 = createSampleEvent("P2", "Pinned 2", isPinned = true)
+        val u1 = createSampleEvent("U1", "Unpinned 1", isPinned = false)
+        val u2 = createSampleEvent("U2", "Unpinned 2", isPinned = false)
+
+        val list = listOf(p1, p2, u1, u2)
+        val reordered = EventReorderHelper.reorderWithPinConsistency(list, 1, 0)
+
+        assertEquals(listOf("P2", "P1", "U1", "U2"), reordered.map { it.id })
+        assertTrue("P2 remains pinned", reordered[0].isPinned)
+        assertTrue("P1 remains pinned", reordered[1].isPinned)
+        assertFalse("U1 remains unpinned", reordered[2].isPinned)
+        assertFalse("U2 remains unpinned", reordered[3].isPinned)
+    }
+
+    @Test
+    fun `reorderWithPinConsistency moving unpinned item within unpinned group preserves isPinned false`() {
+        val p1 = createSampleEvent("P1", "Pinned 1", isPinned = true)
+        val p2 = createSampleEvent("P2", "Pinned 2", isPinned = true)
+        val u1 = createSampleEvent("U1", "Unpinned 1", isPinned = false)
+        val u2 = createSampleEvent("U2", "Unpinned 2", isPinned = false)
+
+        val list = listOf(p1, p2, u1, u2)
+        val reordered = EventReorderHelper.reorderWithPinConsistency(list, 3, 2)
+
+        assertEquals(listOf("P1", "P2", "U2", "U1"), reordered.map { it.id })
+        assertTrue("P1 remains pinned", reordered[0].isPinned)
+        assertTrue("P2 remains pinned", reordered[1].isPinned)
+        assertFalse("U2 remains unpinned", reordered[2].isPinned)
+        assertFalse("U1 remains unpinned", reordered[3].isPinned)
+    }
+
+    @Test
+    fun `reorderWithPinConsistency moving unpinned item above pinned item promotes it to pinned`() {
+        val p1 = createSampleEvent("P1", "Pinned 1", isPinned = true)
+        val p2 = createSampleEvent("P2", "Pinned 2", isPinned = true)
+        val u1 = createSampleEvent("U1", "Unpinned 1", isPinned = false)
+        val u2 = createSampleEvent("U2", "Unpinned 2", isPinned = false)
+
+        val list = listOf(p1, p2, u1, u2)
+        // Drag U2 to the very top (index 0)
+        val reordered = EventReorderHelper.reorderWithPinConsistency(list, 3, 0)
+
+        assertEquals(listOf("U2", "P1", "P2", "U1"), reordered.map { it.id })
+        assertTrue("U2 promoted to pinned", reordered[0].isPinned)
+        assertTrue("P1 remains pinned", reordered[1].isPinned)
+        assertTrue("P2 remains pinned", reordered[2].isPinned)
+        assertFalse("U1 remains unpinned", reordered[3].isPinned)
+    }
+
+    @Test
+    fun `reorderWithPinConsistency moving pinned item below unpinned item demotes it to unpinned`() {
+        val p1 = createSampleEvent("P1", "Pinned 1", isPinned = true)
+        val p2 = createSampleEvent("P2", "Pinned 2", isPinned = true)
+        val u1 = createSampleEvent("U1", "Unpinned 1", isPinned = false)
+        val u2 = createSampleEvent("U2", "Unpinned 2", isPinned = false)
+
+        val list = listOf(p1, p2, u1, u2)
+        // Drag P1 to the end (index 3)
+        val reordered = EventReorderHelper.reorderWithPinConsistency(list, 0, 3)
+
+        assertEquals(listOf("P2", "U1", "U2", "P1"), reordered.map { it.id })
+        assertTrue("P2 remains pinned", reordered[0].isPinned)
+        assertFalse("U1 remains unpinned", reordered[1].isPinned)
+        assertFalse("U2 remains unpinned", reordered[2].isPinned)
+        assertFalse("P1 demoted to unpinned", reordered[3].isPinned)
+    }
+
+    @Test
+    fun `reorderWithPinConsistency on all-pinned list maintains all pinned`() {
+        val p1 = createSampleEvent("P1", "1", isPinned = true)
+        val p2 = createSampleEvent("P2", "2", isPinned = true)
+        val p3 = createSampleEvent("P3", "3", isPinned = true)
+
+        val list = listOf(p1, p2, p3)
+        val reordered = EventReorderHelper.reorderWithPinConsistency(list, 0, 2)
+
+        assertEquals(listOf("P2", "P3", "P1"), reordered.map { it.id })
+        assertTrue(reordered.all { it.isPinned })
+    }
+
+    @Test
+    fun `reorderWithPinConsistency on all-unpinned list maintains all unpinned`() {
+        val u1 = createSampleEvent("U1", "1", isPinned = false)
+        val u2 = createSampleEvent("U2", "2", isPinned = false)
+        val u3 = createSampleEvent("U3", "3", isPinned = false)
+
+        val list = listOf(u1, u2, u3)
+        val reordered = EventReorderHelper.reorderWithPinConsistency(list, 2, 0)
+
+        assertEquals(listOf("U3", "U1", "U2"), reordered.map { it.id })
+        assertTrue(reordered.none { it.isPinned })
+    }
+
+    @Test
+    fun `repository reorderAll atomically updates list and persists to disk`() {
+        val a = createSampleEvent("A", "Birthday", isPinned = true)
+        val b = createSampleEvent("B", "Anniversary", isPinned = false)
+        val c = createSampleEvent("C", "New Year", isPinned = true)
+
+        repository.add(a)
+        repository.add(b)
+        repository.add(c)
+
+        val newOrder = listOf(
+            c, // pinned
+            b.copy(isPinned = true), // promoted
+            a.copy(isPinned = false), // demoted
+        )
+
+        repository.reorderAll(newOrder)
+
+        assertEquals(listOf("C", "B", "A"), repository.getAll().map { it.id })
+        assertTrue(repository.getAll()[0].isPinned)
+        assertTrue(repository.getAll()[1].isPinned)
+        assertFalse(repository.getAll()[2].isPinned)
+
+        // Verify disk storage
+        val freshStorage = AtomicFileEventStorage(JvmAtomicFileWriter(storageFile))
+        val diskLoaded = freshStorage.load()
+        assertEquals(listOf("C", "B", "A"), diskLoaded.map { it.id })
+        assertTrue(diskLoaded[0].isPinned)
+        assertTrue(diskLoaded[1].isPinned)
+        assertFalse(diskLoaded[2].isPinned)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `repository reorderAll throws IllegalArgumentException when event count or IDs mismatch`() {
+        val a = createSampleEvent("A", "Birthday", isPinned = true)
+        val b = createSampleEvent("B", "Anniversary", isPinned = false)
+
+        repository.add(a)
+        repository.add(b)
+
+        val mismatchedList = listOf(
+            a,
+            createSampleEvent("UNKNOWN", "Unknown", isPinned = false),
+        )
+
+        repository.reorderAll(mismatchedList)
+    }
 }
