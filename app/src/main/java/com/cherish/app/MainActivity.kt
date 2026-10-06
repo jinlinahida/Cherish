@@ -12,6 +12,7 @@ import com.cherish.app.settings.repository.DefaultSettingsRepository
 import com.cherish.app.settings.storage.AtomicFileSettingsStorage
 import com.cherish.app.settings.ui.toShirokoWear
 import com.cherish.app.storage.AtomicFileEventStorage
+import com.cherish.app.storage.FileEventImageStorage
 import com.cherish.app.ui.rememberScreenShape
 import io.github.jinlinahida.shirokowear.ui.ShirokoWearTheme
 import java.io.File
@@ -31,6 +32,9 @@ class MainActivity : ComponentActivity() {
         val settingsStorage = com.cherish.app.settings.storage.AtomicFileSettingsStorage(settingsFile)
         val settingsRepository = com.cherish.app.settings.repository.DefaultSettingsRepository(settingsStorage)
 
+        val imageStorageDir = File(filesDir, "backgrounds")
+        val imageStorage = FileEventImageStorage(imageStorageDir)
+
         viewModel = HomeViewModel(
             repository = repository,
             settingsRepository = settingsRepository,
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity() {
                     repository = repository,
                     settingsRepository = settingsRepository,
                     homeViewModel = viewModel,
+                    imageStorage = imageStorage,
                 )
             }
         }

@@ -6,6 +6,7 @@ import com.cherish.app.date.model.RepeatUnit
 import com.cherish.app.date.model.SolarDate
 import com.cherish.app.detail.mapper.EventDetailMapper
 import com.cherish.app.event.model.CountdownEvent
+import com.cherish.app.event.model.EventBackground
 import com.cherish.app.event.model.EventCategory
 import com.cherish.app.event.model.EventDate
 import com.cherish.app.home.model.CountdownDisplayStatus
@@ -230,5 +231,31 @@ class EventDetailPresentationTest {
         assertFalse(showDeleteConfirm)
         assertTrue(eventDeleted)
         assertEquals(CherishRoute.Home, currentRoute)
+    }
+
+    // ==========================================
+    // 4. Background Model & Decoupling Tests
+    // ==========================================
+
+    @Test
+    fun `maps all EventBackground variants into EventDetailUiModel cleanly`() {
+        val backgrounds = listOf(
+            EventBackground.Default,
+            EventBackground.Color(0xFF336699L),
+            EventBackground.Gradient(0xFF8E2DE2L, 0xFF4A00E0L),
+            EventBackground.Pattern("pattern_dots"),
+            EventBackground.Image(path = "bg_test_123.jpg", dimAlpha = 0.5f),
+        )
+
+        for ((index, bg) in backgrounds.withIndex()) {
+            val event = CountdownEvent(
+                id = "bg-test-$index",
+                title = "背景测试 $index",
+                eventDate = EventDate.Solar(SolarDate(2026, 12, 1)),
+                background = bg,
+            )
+            val uiModel = EventDetailMapper.toUiModel(event, referenceToday)
+            assertEquals("Background should be preserved in uiModel", bg, uiModel.background)
+        }
     }
 }

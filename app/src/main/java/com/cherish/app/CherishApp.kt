@@ -26,6 +26,7 @@ import com.cherish.app.navigation.CherishRoute
 import com.cherish.app.navigation.resolveBackRoute
 import com.cherish.app.settings.repository.SettingsRepository
 import com.cherish.app.settings.ui.SettingsScreen
+import com.cherish.app.storage.EventImageStorage
 import io.github.jinlinahida.shirokowear.navigation.shirokoWearPageTransition
 import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
 import kotlinx.coroutines.launch
@@ -51,6 +52,7 @@ fun CherishApp(
     settingsRepository: SettingsRepository,
     homeViewModel: HomeViewModel,
     modifier: Modifier = Modifier,
+    imageStorage: EventImageStorage? = null,
 ) {
     var currentRoute by remember { mutableStateOf<CherishRoute>(CherishRoute.Home) }
     var fromRoute by remember { mutableStateOf<CherishRoute?>(null) }
@@ -190,6 +192,7 @@ fun CherishApp(
                     }
                     EventDetailScreen(
                         uiModel = detailUiModel,
+                        imageStorage = imageStorage,
                         onEditClick = { id ->
                             haptics.click()
                             navigateTo(CherishRoute.Editor(id))
