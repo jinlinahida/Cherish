@@ -166,16 +166,22 @@ object AccessibilityPresentation {
     }
 
     /**
-     * Description for event order move up button.
+     * Description for event order move up action.
      */
     fun buildEventOrderMoveUpDescription(title: String): String =
         "将「$title」向上移动"
 
     /**
-     * Description for event order move down button.
+     * Description for event order move down action.
      */
     fun buildEventOrderMoveDownDescription(title: String): String =
         "将「$title」向下移动"
+
+    /**
+     * State description for item position in reorderable list.
+     */
+    fun buildEventOrderItemStateDescription(index: Int, totalCount: Int): String =
+        "第 ${index + 1} 项，共 $totalCount 项"
 
     /**
      * Description for event order item information card.
@@ -186,6 +192,12 @@ object AccessibilityPresentation {
         totalCount: Int,
         isPinned: Boolean,
     ): String = "第 ${index + 1} 项，共 $totalCount 项：$title${if (isPinned) "，已置顶" else ""}"
+
+    /**
+     * Announcement after an event is reordered.
+     */
+    fun buildEventOrderMovedAnnouncement(title: String, newIndex: Int): String =
+        "已将「$title」移动至第 ${newIndex + 1} 项"
 
     /**
      * State description for tactile haptics master switch.

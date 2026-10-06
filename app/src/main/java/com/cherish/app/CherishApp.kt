@@ -195,15 +195,8 @@ fun CherishApp(
             is CherishRoute.EventOrder -> {
                 com.cherish.app.settings.ui.EventOrderScreen(
                     events = events,
-                    onMoveUp = { index ->
-                        if (index > 0) {
-                            repository.reorder(index, index - 1)
-                        }
-                    },
-                    onMoveDown = { index ->
-                        if (index < events.size - 1) {
-                            repository.reorder(index, index + 1)
-                        }
+                    onReorder = { fromIndex, toIndex ->
+                        repository.reorder(fromIndex, toIndex)
                     },
                     onBack = {
                         navigateTo(CherishRoute.Settings)

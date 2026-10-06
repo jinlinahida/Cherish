@@ -183,6 +183,9 @@ class AccessibilityPresentationTest {
     fun `event ordering move descriptions clearly identify event and intent`() {
         assertEquals("将「生日」向上移动", AccessibilityPresentation.buildEventOrderMoveUpDescription("生日"))
         assertEquals("将「生日」向下移动", AccessibilityPresentation.buildEventOrderMoveDownDescription("生日"))
+        assertEquals("第 1 项，共 5 项", AccessibilityPresentation.buildEventOrderItemStateDescription(0, 5))
+        assertEquals("第 3 项，共 5 项", AccessibilityPresentation.buildEventOrderItemStateDescription(2, 5))
+        assertEquals("已将「生日」移动至第 2 项", AccessibilityPresentation.buildEventOrderMovedAnnouncement("生日", 1))
         assertEquals(
             "第 1 项，共 5 项：生日，已置顶",
             AccessibilityPresentation.buildEventOrderItemDescription("生日", 0, 5, isPinned = true),
