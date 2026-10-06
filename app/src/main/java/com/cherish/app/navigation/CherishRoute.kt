@@ -43,10 +43,11 @@ sealed class CherishRoute : ShirokoWearRoute {
 
     /**
      * Settings screen managing display preferences, haptics, and about.
+     * Top-level secondary space parallel to [Home].
      */
     data object Settings : CherishRoute() {
         override val routeKey: String = "settings"
-        override val depth: Int = 1
+        override val depth: Int = 0
         override val backKey: String = "home"
     }
 
@@ -55,7 +56,7 @@ sealed class CherishRoute : ShirokoWearRoute {
      */
     data object EventOrder : CherishRoute() {
         override val routeKey: String = "event_order"
-        override val depth: Int = 2
+        override val depth: Int = 1
         override val backKey: String = "settings"
     }
 
@@ -64,7 +65,7 @@ sealed class CherishRoute : ShirokoWearRoute {
      */
     data object About : CherishRoute() {
         override val routeKey: String = "about"
-        override val depth: Int = 2
+        override val depth: Int = 1
         override val backKey: String = "settings"
     }
 }

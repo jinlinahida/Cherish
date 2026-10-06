@@ -67,7 +67,7 @@ fun SettingsScreen(
     onUpdateSettings: (AppSettings) -> Unit,
     onNavigateToEventOrder: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     var activeSubScreen by remember { mutableStateOf(SettingsSubScreen.MAIN) }
@@ -233,26 +233,6 @@ fun SettingsScreen(
                                     contentDescription = "关于 Cherish，版本 0.1.0，点击查看详情"
                                 },
                             )
-                        }
-
-                        // Back Button
-                        item(key = "action_back") {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            ShirokoWearCardButton(
-                                onClick = {
-                                    haptics.back()
-                                    onBack()
-                                },
-                                modifier = Modifier.semantics {
-                                    role = Role.Button
-                                    contentDescription = "返回上一页"
-                                },
-                            ) {
-                                Text(
-                                    text = "返回",
-                                    style = MaterialTheme.typography.labelMedium,
-                                )
-                            }
                         }
                     }
                 }

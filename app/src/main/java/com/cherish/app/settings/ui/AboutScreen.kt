@@ -34,7 +34,7 @@ import io.github.jinlinahida.shirokowear.ui.rememberShirokoWearHaptics
  */
 @Composable
 fun AboutScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     versionName: String = "0.1.0",
 ) {
@@ -101,27 +101,6 @@ fun AboutScreen(
                         AboutDetailRow(label = "存储架构", value = "本地原子 JSON")
                         AboutDetailRow(label = "开源协议", value = "MIT")
                     }
-                }
-            }
-
-            // Back Action Button
-            item(key = "action_back") {
-                Spacer(modifier = Modifier.height(4.dp))
-                ShirokoWearCardButton(
-                    onClick = {
-                        haptics.back()
-                        onBack()
-                    },
-                    modifier = Modifier.semantics {
-                        role = Role.Button
-                        contentDescription = "返回上一页"
-                    },
-                ) {
-                    Text(
-                        text = "返回",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
                 }
             }
         }

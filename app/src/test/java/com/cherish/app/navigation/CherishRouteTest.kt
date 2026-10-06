@@ -37,18 +37,18 @@ class CherishRouteTest {
     @Test
     fun `Settings route has correct hierarchy and points back to home`() {
         assertEquals("settings", CherishRoute.Settings.routeKey)
-        assertEquals(1, CherishRoute.Settings.depth)
+        assertEquals(0, CherishRoute.Settings.depth)
         assertEquals("home", CherishRoute.Settings.backKey)
     }
 
     @Test
     fun `EventOrder and About routes are children of settings`() {
         assertEquals("event_order", CherishRoute.EventOrder.routeKey)
-        assertEquals(2, CherishRoute.EventOrder.depth)
+        assertEquals(1, CherishRoute.EventOrder.depth)
         assertEquals("settings", CherishRoute.EventOrder.backKey)
 
         assertEquals("about", CherishRoute.About.routeKey)
-        assertEquals(2, CherishRoute.About.depth)
+        assertEquals(1, CherishRoute.About.depth)
         assertEquals("settings", CherishRoute.About.backKey)
     }
 
@@ -76,5 +76,22 @@ class CherishRouteTest {
     fun `resolveBackRoute pops EventOrder and About back to Settings`() {
         assertEquals(CherishRoute.Settings, resolveBackRoute(CherishRoute.EventOrder))
         assertEquals(CherishRoute.Settings, resolveBackRoute(CherishRoute.About))
+    }
+
+    @Test
+    fun `Home and Settings are parallel top-level spaces with depth 0`() {
+        assertEquals(0, CherishRoute.Home.depth)
+        assertEquals(0, CherishRoute.Settings.depth)
+        assertEquals(CherishRoute.Home.depth, CherishRoute.Settings.depth)
+    }
+
+    @Test
+    fun `child routes under Home and Settings branch appropriately`() {
+        // Under Home:
+        assertEquals("home", CherishRoute.Detail("1").backKey)
+        assertEquals("home", CherishRoute.Editor(null).backKey)
+        // Under Settings:
+        assertEquals("settings", CherishRoute.EventOrder.backKey)
+        assertEquals("settings", CherishRoute.About.backKey)
     }
 }

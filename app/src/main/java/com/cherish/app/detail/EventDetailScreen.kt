@@ -65,7 +65,7 @@ fun EventDetailScreen(
     uiModel: EventDetailUiModel,
     onEditClick: (String) -> Unit,
     onDeleteConfirm: (String) -> Unit,
-    onBackClick: () -> Unit,
+    onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberShirokoWearHaptics()
@@ -333,23 +333,6 @@ fun EventDetailScreen(
                             text = "删除事件",
                             style = MaterialTheme.typography.labelMedium,
                             color = ShirokoWearTheme.colors.accentCopper,
-                        )
-                    }
-                }
-
-                item(key = "detail_btn_back") {
-                    ShirokoWearCardButton(
-                        onClick = {
-                            haptics.back()
-                            onBackClick()
-                        },
-                        modifier = Modifier.semantics {
-                            contentDescription = "返回上一页"
-                        },
-                    ) {
-                        Text(
-                            text = "返回",
-                            style = MaterialTheme.typography.labelMedium,
                         )
                     }
                 }
