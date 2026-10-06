@@ -123,6 +123,7 @@ object DatePickerSanitizer {
             eventDate = eventDate,
             repeatRule = state.repeatRule,
             isPinned = state.isPinned,
+            color = state.color,
             background = state.background,
             notes = state.notes.trim(),
         )

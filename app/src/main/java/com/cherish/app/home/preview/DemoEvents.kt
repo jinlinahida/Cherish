@@ -7,6 +7,7 @@ import com.cherish.app.date.model.SolarDate
 import com.cherish.app.event.model.CountdownEvent
 import com.cherish.app.event.model.EventBackground
 import com.cherish.app.event.model.EventCategory
+import com.cherish.app.event.model.EventColor
 import com.cherish.app.event.model.EventDate
 
 /**
@@ -27,6 +28,7 @@ object DemoEvents {
             eventDate = EventDate.Lunar(LunarDate(2026, 8, 15)),
             repeatRule = RepeatRule.Yearly,
             isPinned = true,
+            color = EventColor.Amber,
             background = EventBackground.Color(0xFFFFA000),
             notes = "阖家团圆赏月",
         ),
@@ -39,6 +41,7 @@ object DemoEvents {
             eventDate = EventDate.Solar(SolarDate(2026, 11, 20)),
             repeatRule = RepeatRule.Yearly,
             isPinned = true,
+            color = EventColor.Rose,
             background = EventBackground.Color(0xFFE91E63),
         ),
         // 3. Event happening TODAY

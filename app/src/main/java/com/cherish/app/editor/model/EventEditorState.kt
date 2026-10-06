@@ -6,6 +6,7 @@ import com.cherish.app.date.model.SolarDate
 import com.cherish.app.event.model.CountdownEvent
 import com.cherish.app.event.model.EventBackground
 import com.cherish.app.event.model.EventCategory
+import com.cherish.app.event.model.EventColor
 import com.cherish.app.event.model.EventDate
 
 /**
@@ -23,6 +24,7 @@ data class EventEditorState(
     val repeatRule: RepeatRule = RepeatRule.None,
     val category: EventCategory = EventCategory.GENERAL,
     val isPinned: Boolean = false,
+    val color: EventColor = EventColor.Default,
     val background: EventBackground = EventBackground.Default,
     val notes: String = "",
     val titleError: String? = null,
@@ -46,6 +48,7 @@ data class EventEditorState(
                 repeatRule = RepeatRule.None,
                 category = EventCategory.GENERAL,
                 isPinned = false,
+                color = EventColor.Default,
                 background = EventBackground.Default,
                 notes = "",
             )
@@ -72,6 +75,7 @@ data class EventEditorState(
                 repeatRule = event.repeatRule,
                 category = event.category,
                 isPinned = event.isPinned,
+                color = event.resolvedColor(),
                 background = event.background,
                 notes = event.notes,
             )

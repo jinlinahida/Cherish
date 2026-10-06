@@ -86,6 +86,7 @@ class HomeEventMapper(
             unitLabel = unitLabel,
             targetDateFormatted = dateLabel,
             isPinned = event.isPinned,
+            color = event.resolvedColor(),
             background = event.background,
         )
     }

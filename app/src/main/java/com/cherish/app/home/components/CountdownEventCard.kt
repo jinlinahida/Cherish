@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material3.MaterialTheme
 import androidx.wear.compose.material3.Text
 import com.cherish.app.event.model.EventBackground
+import com.cherish.app.event.model.EventColor
 import com.cherish.app.home.model.CountdownDisplayStatus
 import com.cherish.app.home.model.CountdownTypographyTier
 import com.cherish.app.home.model.HomeEventUiModel
@@ -56,9 +57,14 @@ fun CountdownEventCard(
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val highlightColor = when (val bg = uiModel.background) {
-        is EventBackground.Color -> Color(bg.argb)
-        else -> ShirokoWearTheme.colors.cardHighlight
+    val highlightColor = when (val c = uiModel.color) {
+        is EventColor.Single -> Color(c.argb)
+        is EventColor.Gradient -> Color(c.startColor)
+        EventColor.Default -> when (val bg = uiModel.background) {
+            is EventBackground.Color -> Color(bg.argb)
+            is EventBackground.Gradient -> Color(bg.startColor)
+            else -> ShirokoWearTheme.colors.cardHighlight
+        }
     }
 
     val cardShape = if (isCompact) ShirokoWearShapes.cardCompact else ShirokoWearShapes.card

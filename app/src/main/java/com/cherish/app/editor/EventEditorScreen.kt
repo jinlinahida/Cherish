@@ -403,6 +403,7 @@ private fun formatBackground(bg: EventBackground): String = when (bg) {
     is EventBackground.Color -> "经典配色"
     is EventBackground.Gradient -> "渐变微光"
     is EventBackground.Pattern -> "纹理风格"
+    is EventBackground.Image -> "自定义图片"
 }
 
 @Preview(device = "id:wearos_small_round", showSystemUi = true)

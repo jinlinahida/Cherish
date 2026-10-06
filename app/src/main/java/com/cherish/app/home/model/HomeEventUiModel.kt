@@ -3,6 +3,7 @@ package com.cherish.app.home.model
 import com.cherish.app.date.model.SolarDate
 import com.cherish.app.event.model.CountdownEvent
 import com.cherish.app.event.model.EventBackground
+import com.cherish.app.event.model.EventColor
 
 /**
  * Display status indicating whether an event is in the future, today, or in the past.
@@ -26,7 +27,8 @@ enum class CountdownDisplayStatus {
  * @property unitLabel Unit text ("DAYS", "TODAY", "DAYS AGO")
  * @property targetDateFormatted Formatted target date string (e.g. "2026.10.17")
  * @property isPinned Whether the event is pinned
- * @property background Custom background configuration
+ * @property color Color scheme for this card (subtle gradient)
+ * @property background Custom background configuration (for Detail view)
  */
 data class HomeEventUiModel(
     val event: CountdownEvent,
@@ -36,5 +38,6 @@ data class HomeEventUiModel(
     val unitLabel: String,
     val targetDateFormatted: String,
     val isPinned: Boolean,
-    val background: EventBackground,
+    val color: EventColor = event.resolvedColor(),
+    val background: EventBackground = event.background,
 )
