@@ -68,6 +68,15 @@ sealed class CherishRoute : ShirokoWearRoute {
         override val depth: Int = 1
         override val backKey: String = "settings"
     }
+
+    /**
+     * Phone synchronisation screen generating QR code for mobile browser editing.
+     */
+    data object PhoneSync : CherishRoute() {
+        override val routeKey: String = "phone_sync"
+        override val depth: Int = 1
+        override val backKey: String = "settings"
+    }
 }
 
 /**
@@ -81,4 +90,5 @@ fun resolveBackRoute(currentRoute: CherishRoute): CherishRoute? = when (currentR
     is CherishRoute.Settings -> CherishRoute.Home
     is CherishRoute.EventOrder -> CherishRoute.Settings
     is CherishRoute.About -> CherishRoute.Settings
+    is CherishRoute.PhoneSync -> CherishRoute.Settings
 }

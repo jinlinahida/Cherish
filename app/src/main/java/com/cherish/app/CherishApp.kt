@@ -157,6 +157,10 @@ fun CherishApp(
                                     haptics.click()
                                     navigateTo(CherishRoute.EventOrder)
                                 },
+                                onNavigateToPhoneSync = {
+                                    haptics.click()
+                                    navigateTo(CherishRoute.PhoneSync)
+                                },
                                 onNavigateToAbout = {
                                     haptics.click()
                                     navigateTo(CherishRoute.About)
@@ -299,6 +303,16 @@ fun CherishApp(
 
             is CherishRoute.About -> {
                 com.cherish.app.settings.ui.AboutScreen(
+                    onBack = {
+                        navigateTo(CherishRoute.Settings)
+                    },
+                )
+            }
+
+            is CherishRoute.PhoneSync -> {
+                com.cherish.app.sync.ui.PhoneSyncScreen(
+                    repository = repository,
+                    imageStorage = imageStorage,
                     onBack = {
                         navigateTo(CherishRoute.Settings)
                     },

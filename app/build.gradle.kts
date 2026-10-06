@@ -60,6 +60,9 @@ dependencies {
     // Kotlinx Serialization for local persistence
     implementation(libs.kotlinx.serialization.json)
 
+    // ZXing for QR Code generation
+    implementation(libs.zxing.core)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.test.junit)
 }

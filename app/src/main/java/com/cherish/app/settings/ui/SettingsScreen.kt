@@ -67,6 +67,7 @@ fun SettingsScreen(
     onUpdateSettings: (AppSettings) -> Unit,
     onNavigateToCreateEvent: () -> Unit = {},
     onNavigateToEventOrder: () -> Unit,
+    onNavigateToPhoneSync: () -> Unit = {},
     onNavigateToAbout: () -> Unit,
     onBack: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -139,6 +140,21 @@ fun SettingsScreen(
                                 },
                                 modifier = Modifier.semantics {
                                     contentDescription = "事件排序，共 $eventCount 个事件，点击调整顺序"
+                                },
+                            )
+                        }
+
+                        // Phone QR Sync
+                        item(key = "item_phone_sync") {
+                            ShirokoWearSettingsItem(
+                                title = "手机编辑",
+                                subtitle = "扫码在手机浏览器中管理与同步",
+                                onClick = {
+                                    haptics.click()
+                                    onNavigateToPhoneSync()
+                                },
+                                modifier = Modifier.semantics {
+                                    contentDescription = "手机编辑，扫码在手机浏览器中管理与同步"
                                 },
                             )
                         }
